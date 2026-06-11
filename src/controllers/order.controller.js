@@ -4,6 +4,10 @@ import asyncHandler from "../utils/asyncHandler.js";
 
 export const createOrder = asyncHandler(
   async (req, res) => {
+    console.log("ORDER BODY:", req.body);
+    console.log("REQ USER:", req.user);
+    
+    
     try {
       console.log(
         "========== CREATE ORDER =========="

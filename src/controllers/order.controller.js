@@ -5,8 +5,9 @@ import asyncHandler from "../utils/asyncHandler.js";
 export const createOrder = asyncHandler(
   async (req, res) => {
     console.log("ORDER BODY:", req.body);
-    console.log("REQ USER:", req.user);
-    
+    // console.log("REQ USER:", req.user);
+    console.log("REQ USER:",JSON.stringify(req.user, null, 2));
+    console.log("REQ BODY:",JSON.stringify(req.body, null, 2));
     
     try {
       console.log(
@@ -47,34 +48,34 @@ export const createOrder = asyncHandler(
 
       const processedProducts = [];
 
-      for (const item of orderedProducts) {
-        console.log(
-          "CURRENT ITEM:",
-          JSON.stringify(item, null, 2)
-        );
+for (const item of orderedProducts) {
 
-        console.log(
-          "PRODUCT ID:",
-          item.productId
-        );
+  console.log(
+    "ORDER ITEM:",
+    JSON.stringify(item, null, 2)
+  );
 
-        const product =
-          await Product.findById(
-            item.productId
-          );
+  console.log(
+    "PRODUCT ID RECEIVED:",
+    item.productId
+  );
 
-        console.log(
-          "FOUND PRODUCT:",
-          product
-        );
+  const product =
+    await Product.findById(
+      item.productId
+    );
 
-        if (!product) {
-          return res.status(404).json({
-            success: false,
-            message: `Product not found: ${item.productId}`,
-          });
-        }
+  console.log(
+    "PRODUCT FOUND:",
+    product
+  );
 
+  if (!product) {
+    return res.status(404).json({
+      success: false,
+      message: `Product not found: ${item.productId}`,
+    });
+  }
         const subtotal =
           product.price * item.quantity;
 

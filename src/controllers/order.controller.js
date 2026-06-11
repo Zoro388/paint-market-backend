@@ -2,96 +2,141 @@ import Order from "../models/Order.js";
 import Product from "../models/Product.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
+export const createOrder = asyncHandler(
+  async (req, res) => {
+    try {
+      console.log(
+        "========== CREATE ORDER =========="
+      );
 
-export const createOrder =
-  asyncHandler(async (req, res) => {
-    const {
-      deliveryAddress,
-      state,
-      city,
-      paymentMethod,
-      notes,
-      orderedProducts,
-    } = req.body;
+      console.log(
+        "REQ USER:",
+        JSON.stringify(req.user, null, 2)
+      );
 
-    if (
-      !orderedProducts ||
-      orderedProducts.length === 0
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "No products selected",
-      });
-    }
+      console.log(
+        "REQ BODY:",
+        JSON.stringify(req.body, null, 2)
+      );
 
-    let totalAmount = 0;
-
-    const processedProducts = [];
-
-    for (const item of orderedProducts) {
-      const product =
-        await Product.findById(
-          item.productId
-        );
-
-      if (!product) {
-        return res.status(404).json({
-          success: false,
-          message: `Product not found: ${item.productId}`,
-        });
-      }
-
-      const subtotal =
-        product.price * item.quantity;
-
-      totalAmount += subtotal;
-
-      processedProducts.push({
-        product: product._id,
-        productName:
-          product.productName,
-        selectedColour:
-          item.selectedColour,
-        quantity: item.quantity,
-        unitPrice: product.price,
-        subtotal,
-      });
-    }
-
-    const order =
-      await Order.create({
-        user: req.user._id,
-
-        customerName: `${req.user.firstName} ${req.user.lastName}`,
-
-        email: req.user.email,
-
-        phoneNumber:
-          req.user.phoneNumber,
-
+      const {
         deliveryAddress,
         state,
         city,
-
-        orderedProducts:
-          processedProducts,
-
-        totalAmount,
-
         paymentMethod,
-
         notes,
+        orderedProducts,
+      } = req.body;
+
+      if (
+        !orderedProducts ||
+        orderedProducts.length === 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "No products selected",
+        });
+      }
+
+      let totalAmount = 0;
+
+      const processedProducts = [];
+
+      for (const item of orderedProducts) {
+        console.log(
+          "CURRENT ITEM:",
+          JSON.stringify(item, null, 2)
+        );
+
+        console.log(
+          "PRODUCT ID:",
+          item.productId
+        );
+
+        const product =
+          await Product.findById(
+            item.productId
+          );
+
+        console.log(
+          "FOUND PRODUCT:",
+          product
+        );
+
+        if (!product) {
+          return res.status(404).json({
+            success: false,
+            message: `Product not found: ${item.productId}`,
+          });
+        }
+
+        const subtotal =
+          product.price * item.quantity;
+
+        totalAmount += subtotal;
+
+        processedProducts.push({
+          product: product._id,
+          productName:
+            product.productName,
+          selectedColour:
+            item.selectedColour,
+          quantity: item.quantity,
+          unitPrice: product.price,
+          subtotal,
+        });
+      }
+
+      const order =
+        await Order.create({
+          user: req.user._id,
+
+          customerName: `${req.user.firstName} ${req.user.lastName}`,
+
+          email: req.user.email,
+
+          phoneNumber:
+            req.user.phoneNumber,
+
+          deliveryAddress,
+          state,
+          city,
+
+          orderedProducts:
+            processedProducts,
+
+          totalAmount,
+
+          paymentMethod,
+
+          notes,
+        });
+
+      console.log(
+        "ORDER CREATED:",
+        order._id
+      );
+
+      res.status(201).json({
+        success: true,
+        message:
+          "Order created successfully",
+        order,
       });
+    } catch (error) {
+      console.error(
+        "CREATE ORDER ERROR:",
+        error
+      );
 
-    res.status(201).json({
-      success: true,
-      message:
-        "Order created successfully",
-      order,
-    });
-  });
-
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+);
 
 
 

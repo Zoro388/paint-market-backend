@@ -10,18 +10,15 @@ import userRoutes from "./routes/user.routes.js";
 import productRoutes from "./routes/product.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
+import leadRoutes from "./routes/lead.routes.js";
+import newsletterRoutes from "./routes/newsletter.routes.js";
+import painterRequestRoutes from "./routes/painterRequest.routes.js";
 
 import notFoundMiddleware from "./middleware/notFound.middleware.js";
 import errorMiddleware from "./middleware/error.middleware.js";
 
 
 const app = express();
-
-/*
-|--------------------------------------------------------------------------
-| Body Parsers
-|--------------------------------------------------------------------------
-*/
 
 app.use(express.json());
 
@@ -31,11 +28,6 @@ app.use(
   })
 );
 
-/*
-|--------------------------------------------------------------------------
-| Security
-|--------------------------------------------------------------------------
-*/
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -107,6 +99,18 @@ app.use(
 app.use(
   "/api/payments",
   paymentRoutes
+);
+app.use(
+  "/api/leads",
+  leadRoutes
+);
+app.use(
+  "/api/newsletter",
+  newsletterRoutes
+);
+app.use(
+  "/api/painter-requests",
+  painterRequestRoutes
 );
 
 /*

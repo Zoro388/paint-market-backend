@@ -113,7 +113,8 @@ asyncHandler(async (
     adminResponse;
 
   estimate.status =
-    status || "quoted";
+  status?.trim() ||
+  "quoted";
 
   estimate.responseDate =
     new Date();

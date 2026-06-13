@@ -26,7 +26,7 @@ const blogSchema =
 
       featuredImage: {
         type: String,
-        default: "",
+        required: true,
       },
 
       author: {

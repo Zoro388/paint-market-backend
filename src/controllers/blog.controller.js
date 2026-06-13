@@ -3,28 +3,48 @@ import asyncHandler from "../utils/asyncHandler.js";
 import slugify from "slugify";
 
 export const createBlog =
-  asyncHandler(async (req, res) => {
-    const slug = slugify(
-      req.body.title,
-      {
-        lower: true,
-        strict: true,
-      }
-    );
+asyncHandler(async (req, res) => {
+  try {
+
+    const imageUrl =
+      req.file?.path;
+
+    if (!imageUrl) {
+      return res.status(400).json({
+        success: false,
+        message: "Featured image is required",
+      });
+    }
 
     const blog =
       await Blog.create({
-        ...req.body,
-        slug,
+        title: req.body.title,
+        excerpt: req.body.excerpt,
+        content: req.body.content,
+        featuredImage: imageUrl,
+        tags: req.body.tags
+          ? JSON.parse(req.body.tags)
+          : [],
+        isFeatured:
+          req.body.isFeatured === "true",
+        author: req.user._id,
       });
 
     res.status(201).json({
       success: true,
-      message:
-        "Blog created successfully",
+      message: "Blog created successfully",
       blog,
     });
-  });
+
+  } catch (error) {
+    console.error("CREATE BLOG ERROR:", error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 
 export const getBlogs =
   asyncHandler(async (req, res) => {

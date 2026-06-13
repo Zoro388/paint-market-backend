@@ -8,8 +8,11 @@ import {
   deletePortfolio,
 } from "../controllers/portfolio.controller.js";
 
+
+
 import protect from "../middleware/auth.middleware.js";
 import authorize from "../middleware/role.middleware.js";
+import portfolioUpload from "../middleware/portfolioUpload.middleware.js";
 
 const router = express.Router();
 
@@ -17,12 +20,8 @@ router.get("/", getPortfolios);
 
 router.get("/:id", getPortfolio);
 
-router.post(
-  "/",
-  protect,
-  authorize("admin"),
-  createPortfolio
-);
+router.post("/",protect,authorize("admin"),
+portfolioUpload.array("images",10),createPortfolio);
 
 router.put(
   "/:id",

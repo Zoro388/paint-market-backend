@@ -1,9 +1,5 @@
 import { Resend } from "resend";
 
-const resend = new Resend(
-  process.env.RESEND_API_KEY
-);
-
 export const sendEstimateResponseEmail =
 async ({
   customerName,
@@ -11,6 +7,11 @@ async ({
   estimatedAmount,
   adminResponse,
 }) => {
+
+  const resend =
+    new Resend(
+      process.env.RESEND_API_KEY
+    );
 
   await resend.emails.send({
     from:
@@ -34,7 +35,9 @@ async ({
 
         <h3>
           Estimated Amount:
-          ₦${estimatedAmount.toLocaleString()}
+          ₦${Number(
+            estimatedAmount
+          ).toLocaleString()}
         </h3>
 
         <p>
@@ -52,4 +55,5 @@ async ({
       </div>
     `,
   });
+
 };

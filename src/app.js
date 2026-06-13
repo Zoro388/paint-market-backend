@@ -13,6 +13,10 @@ import paymentRoutes from "./routes/payment.routes.js";
 import leadRoutes from "./routes/lead.routes.js";
 import newsletterRoutes from "./routes/newsletter.routes.js";
 import painterRequestRoutes from "./routes/painterRequest.routes.js";
+import siteEstimatorRoutes from "./routes/siteEstimator.routes.js";
+import portfolioRoutes from "./routes/portfolio.routes.js";
+import blogRoutes from "./routes/blog.routes.js";
+
 
 import notFoundMiddleware from "./middleware/notFound.middleware.js";
 import errorMiddleware from "./middleware/error.middleware.js";
@@ -111,6 +115,21 @@ app.use(
 app.use(
   "/api/painter-requests",
   painterRequestRoutes
+);
+
+app.use(
+  "/api/site-estimator",
+  siteEstimatorRoutes
+);
+
+app.use(
+  "/api/portfolio",
+  portfolioRoutes
+);
+
+app.use(
+  "/api/blogs",
+  blogRoutes
 );
 
 /*

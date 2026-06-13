@@ -92,6 +92,10 @@ const orderSchema = new mongoose.Schema(
       enum: ["pending", "paid", "failed"],
       default: "pending",
     },
+    paymentReference:{
+      type: String,
+      default: "",
+    },
 
     orderStatus: {
       type: String,

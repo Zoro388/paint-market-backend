@@ -5,6 +5,7 @@ import {
   getEstimatorRequests,
   getEstimatorRequest,
   updateEstimatorStatus,
+  respondToEstimate,
 } from "../controllers/siteEstimator.controller.js";
 
 import protect from "../middleware/auth.middleware.js";
@@ -12,10 +13,20 @@ import authorize from "../middleware/role.middleware.js";
 
 const router = express.Router();
 
+
+// =========================
+// PUBLIC
+// =========================
+
 router.post(
   "/",
   createEstimatorRequest
 );
+
+
+// =========================
+// ADMIN
+// =========================
 
 router.get(
   "/",
@@ -36,6 +47,18 @@ router.patch(
   protect,
   authorize("admin"),
   updateEstimatorStatus
+);
+
+
+// =========================
+// ADMIN RESPOND TO ESTIMATE
+// =========================
+
+router.patch(
+  "/:id/respond",
+  protect,
+  authorize("admin"),
+  respondToEstimate
 );
 
 export default router;

@@ -1,6 +1,8 @@
 import SiteEstimator from "../models/SiteEstimator.js";
 import asyncHandler from "../utils/asyncHandler.js";
-
+import {
+  sendEstimateResponseEmail,
+} from "../services/estimateEmail.service.js";
 export const createEstimatorRequest =
   asyncHandler(async (req, res) => {
     const request =
@@ -78,3 +80,63 @@ export const updateEstimatorStatus =
       request,
     });
   });
+
+  export const respondToEstimate =
+asyncHandler(async (
+  req,
+  res
+) => {
+
+  const estimate =
+    await SiteEstimator.findById(
+      req.params.id
+    );
+
+  if (!estimate) {
+    return res.status(404).json({
+      success: false,
+      message:
+        "Estimate request not found",
+    });
+  }
+
+  const {
+    estimatedAmount,
+    adminResponse,
+    status,
+  } = req.body;
+
+  estimate.estimatedAmount =
+    estimatedAmount;
+
+  estimate.adminResponse =
+    adminResponse;
+
+  estimate.status =
+    status || "quoted";
+
+  estimate.responseDate =
+    new Date();
+
+  await estimate.save();
+
+  await sendEstimateResponseEmail({
+    customerName:
+      estimate.fullName,
+
+    email:
+      estimate.email,
+
+    estimatedAmount,
+
+    adminResponse,
+  });
+
+  res.status(200).json({
+    success: true,
+    message:
+      "Estimate response sent successfully",
+    estimate,
+  });
+
+});

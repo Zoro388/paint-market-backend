@@ -36,6 +36,32 @@ const siteEstimatorSchema =
       inspectionDate: {
         type: Date,
       },
+      adminResponse: {
+  type: String,
+  default: "",
+},
+
+estimatedAmount: {
+  type: Number,
+  default: 0,
+},
+
+responseDate: {
+  type: Date,
+},
+
+status: {
+  type: String,
+  enum: [
+    "pending",
+    "reviewing",
+    "quoted",
+    "scheduled",
+    "completed",
+    "cancelled",
+  ],
+  default: "pending",
+},
 
       notes: {
         type: String,

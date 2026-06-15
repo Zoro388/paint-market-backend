@@ -1,5 +1,8 @@
 import PainterRequest from "../models/PainterRequest.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import {
+  sendPainterResponseEmail,
+} from "../services/painterRequestEmail.service.js";
 
 export const createPainterRequest =
   asyncHandler(async (req, res) => {

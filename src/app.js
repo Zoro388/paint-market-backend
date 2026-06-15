@@ -16,6 +16,7 @@ import painterRequestRoutes from "./routes/painterRequest.routes.js";
 import siteEstimatorRoutes from "./routes/siteEstimator.routes.js";
 import portfolioRoutes from "./routes/portfolio.routes.js";
 import blogRoutes from "./routes/blog.routes.js";
+import contactRoutes from "./routes/contact.routes.js";
 
 
 import notFoundMiddleware from "./middleware/notFound.middleware.js";
@@ -132,6 +133,10 @@ app.use(
   blogRoutes
 );
 
+app.use(
+  "/api/contact",
+  contactRoutes
+);
 /*
 |--------------------------------------------------------------------------
 | Error Handling

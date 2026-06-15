@@ -80,3 +80,71 @@ export const updatePainterStatus =
       request,
     });
   });
+
+
+  export const respondToPainterRequest =
+asyncHandler(async (
+  req,
+  res
+) => {
+
+  const request =
+    await PainterRequest.findById(
+      req.params.id
+    );
+
+  if (!request) {
+    return res.status(404).json({
+      success: false,
+      message:
+        "Painter request not found",
+    });
+  }
+
+  const {
+    estimatedCost,
+    inspectionDate,
+    adminResponse,
+    status,
+  } = req.body;
+
+  request.estimatedCost =
+    estimatedCost;
+
+  request.inspectionDate =
+    inspectionDate;
+
+  request.adminResponse =
+    adminResponse;
+
+  request.status =
+    status?.trim() ||
+    "quoted";
+
+  request.responseDate =
+    new Date();
+
+  await request.save();
+
+  await sendPainterResponseEmail({
+    customerName:
+      request.fullName,
+
+    email:
+      request.email,
+
+    estimatedCost,
+
+    inspectionDate,
+
+    adminResponse,
+  });
+
+  res.status(200).json({
+    success: true,
+    message:
+      "Painter request response sent successfully",
+    request,
+  });
+
+});

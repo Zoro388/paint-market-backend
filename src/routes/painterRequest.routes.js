@@ -5,6 +5,7 @@ import {
   getPainterRequests,
   getPainterRequest,
   updatePainterStatus,
+  respondToPainterRequest,
 } from "../controllers/painterRequest.controller.js";
 
 import protect from "../middleware/auth.middleware.js";
@@ -36,6 +37,13 @@ router.patch(
   protect,
   authorize("admin"),
   updatePainterStatus
+);
+
+router.patch(
+  "/:id/respond",
+  protect,
+  authorize("admin"),
+  respondToPainterRequest
 );
 
 export default router;

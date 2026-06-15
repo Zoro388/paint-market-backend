@@ -46,13 +46,35 @@ const painterRequestSchema =
         type: String,
       },
 
+      inspectionDate: {
+        type: Date,
+      },
+
+      estimatedCost: {
+        type: Number,
+        default: 0,
+      },
+
+      adminResponse: {
+        type: String,
+        default: "",
+      },
+
+      responseDate: {
+        type: Date,
+      },
+
       status: {
         type: String,
         enum: [
           "pending",
+          "reviewing",
           "contacted",
+          "quoted",
+          "scheduled",
           "assigned",
           "completed",
+          "cancelled",
         ],
         default: "pending",
       },

@@ -17,6 +17,9 @@ import siteEstimatorRoutes from "./routes/siteEstimator.routes.js";
 import portfolioRoutes from "./routes/portfolio.routes.js";
 import blogRoutes from "./routes/blog.routes.js";
 import contactRoutes from "./routes/contact.routes.js";
+import cartRoutes from "./routes/cart.routes.js";
+
+
 
 
 import notFoundMiddleware from "./middleware/notFound.middleware.js";
@@ -136,6 +139,11 @@ app.use(
 app.use(
   "/api/contact",
   contactRoutes
+);
+
+app.use(
+  "/api/cart",
+  cartRoutes
 );
 /*
 |--------------------------------------------------------------------------

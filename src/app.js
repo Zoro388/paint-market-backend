@@ -18,6 +18,7 @@ import portfolioRoutes from "./routes/portfolio.routes.js";
 import blogRoutes from "./routes/blog.routes.js";
 import contactRoutes from "./routes/contact.routes.js";
 import cartRoutes from "./routes/cart.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
 
 
 
@@ -144,6 +145,12 @@ app.use(
 app.use(
   "/api/cart",
   cartRoutes
+);
+
+
+app.use(
+  "/api/admin",
+  adminRoutes
 );
 /*
 |--------------------------------------------------------------------------

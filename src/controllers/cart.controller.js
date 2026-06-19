@@ -2,6 +2,8 @@ import Cart from "../models/Cart.js";
 import Product from "../models/Product.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
+
+// ADD TO CART
 export const addToCart =
   asyncHandler(async (req, res) => {
 
@@ -62,13 +64,14 @@ export const addToCart =
     res.status(200).json({
       success: true,
       message:
-        "Added to cart",
+        "Item added to cart",
       cart,
     });
-
   });
 
-export const getCart =
+
+// GET MY CART
+export const getMyCart =
   asyncHandler(async (req, res) => {
 
     const cart =
@@ -82,9 +85,10 @@ export const getCart =
       success: true,
       cart,
     });
-
   });
 
+
+// UPDATE QUANTITY
 export const updateCartItem =
   asyncHandler(async (req, res) => {
 
@@ -127,9 +131,10 @@ export const updateCartItem =
         "Cart updated",
       cart,
     });
-
   });
 
+
+// REMOVE ITEM
 export const removeCartItem =
   asyncHandler(async (req, res) => {
 
@@ -161,9 +166,10 @@ export const removeCartItem =
         "Item removed",
       cart,
     });
-
   });
 
+
+// CLEAR CART
 export const clearCart =
   asyncHandler(async (req, res) => {
 
@@ -172,15 +178,22 @@ export const clearCart =
         user: req.user._id,
       });
 
-    if (cart) {
-      cart.items = [];
-      await cart.save();
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Cart not found",
+      });
     }
+
+    cart.items = [];
+
+    await cart.save();
 
     res.status(200).json({
       success: true,
       message:
         "Cart cleared",
+      cart,
     });
-
   });

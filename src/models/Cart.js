@@ -12,7 +12,7 @@ const cartItemSchema =
       quantity: {
         type: Number,
         required: true,
-        default: 1,
+        min: 1,
       },
 
       selectedColour: {
@@ -40,9 +40,7 @@ const cartSchema =
     }
   );
 
-const Cart = mongoose.model(
+export default mongoose.model(
   "Cart",
   cartSchema
 );
-
-export default Cart;

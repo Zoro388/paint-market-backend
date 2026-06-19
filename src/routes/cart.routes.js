@@ -2,7 +2,7 @@ import express from "express";
 
 import {
   addToCart,
-  getCart,
+  getMyCart,
   updateCartItem,
   removeCartItem,
   clearCart,
@@ -22,10 +22,10 @@ router.post(
 router.get(
   "/",
   protect,
-  getCart
+  getMyCart
 );
 
-router.put(
+router.patch(
   "/:productId",
   protect,
   updateCartItem
@@ -38,7 +38,7 @@ router.delete(
 );
 
 router.delete(
-  "/clear",
+  "/",
   protect,
   clearCart
 );

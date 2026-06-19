@@ -1,6 +1,9 @@
 import User from "../models/User.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import generateToken from "../utils/generateToken.js";
+import crypto from "crypto";
+import {  sendPasswordResetEmail,} from "../services/authEmail.service.js";
+
 
 export const signup =
   asyncHandler(async (req, res) => {
@@ -151,5 +154,111 @@ export const changePassword =
       success: true,
       message:
         "Password updated successfully.",
+    });
+  });
+
+
+  export const forgotPassword =
+  asyncHandler(async (req, res) => {
+
+    const { email } = req.body;
+
+    const user =
+      await User.findOne({
+        email,
+      });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "User not found",
+      });
+    }
+
+    const resetToken =
+      user.generateResetToken();
+
+    await user.save({
+      validateBeforeSave:
+        false,
+    });
+
+    const resetUrl =
+      `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+    await sendPasswordResetEmail({
+      email: user.email,
+      firstName:
+        user.firstName,
+      resetUrl,
+    });
+
+    res.status(200).json({
+      success: true,
+      message:
+        "Password reset email sent successfully",
+    });
+  });
+
+
+  export const resetPassword =
+  asyncHandler(async (req, res) => {
+
+    const hashedToken =
+      crypto
+        .createHash("sha256")
+        .update(req.params.token)
+        .digest("hex");
+
+    const user =
+      await User.findOne({
+        resetPasswordToken:
+          hashedToken,
+
+        resetPasswordExpire: {
+          $gt: Date.now(),
+        },
+      }).select("+password");
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid or expired token",
+      });
+    }
+
+    const {
+      password,
+      confirmPassword,
+    } = req.body;
+
+    if (
+      password !==
+      confirmPassword
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Passwords do not match",
+      });
+    }
+
+    user.password =
+      password;
+
+    user.resetPasswordToken =
+      undefined;
+
+    user.resetPasswordExpire =
+      undefined;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message:
+        "Password reset successfully",
     });
   });

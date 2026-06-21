@@ -1,9 +1,4 @@
-import { Resend } from "resend";
-
-const resend = new Resend(
-  process.env.RESEND_API_KEY
-);
-
+import resend from "../config/resend.js";
 export const sendPainterResponseEmail =
 async ({
   customerName,

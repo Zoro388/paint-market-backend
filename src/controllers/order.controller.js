@@ -200,31 +200,52 @@ asyncHandler(async (
 // GET MY ORDERS
 // ======================
 
-export const getMyOrders =
-asyncHandler(async (
-  req,
-  res
-) => {
+// export const getMyOrders =
+// asyncHandler(async (
+//   req,
+//   res
+// ) => {
 
-  const orders =
-    await Order.find({
-      user:
-        req.user._id,
-    }).sort({
-      createdAt: -1,
+//   const orders =
+//     await Order.find({
+//       user:
+//         req.user._id,
+//     }).sort({
+//       createdAt: -1,
+//     });
+
+//   res.status(200).json({
+//     success: true,
+
+//     count:
+//       orders.length,
+
+//     orders,
+//   });
+
+// });
+
+
+export const getMyOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({
+      user: req.user._id,
+    })
+      .populate("items.product", "name images")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: orders.length,
+      orders,
     });
-
-  res.status(200).json({
-    success: true,
-
-    count:
-      orders.length,
-
-    orders,
-  });
-
-});
-
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
 
 

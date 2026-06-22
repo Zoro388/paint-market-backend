@@ -262,3 +262,19 @@ export const changePassword =
         "Password reset successfully",
     });
   });
+
+
+
+
+export const checkAuthStatus = async (req, res) => {
+  res.status(200).json({
+    success: true,
+    authenticated: true,
+    user: {
+      id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role,
+    },
+  });
+};

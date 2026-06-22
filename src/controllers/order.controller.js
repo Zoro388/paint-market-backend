@@ -225,13 +225,15 @@ asyncHandler(async (
 
 // });
 
-
-export const getMyOrders = async (req, res) => {
-  try {
+export const getMyOrders = asyncHandler(
+  async (req, res) => {
     const orders = await Order.find({
       user: req.user._id,
     })
-      .populate("items.product", "name images")
+      .populate(
+        "orderedProducts.product",
+        "name images price slug"
+      )
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -239,13 +241,8 @@ export const getMyOrders = async (req, res) => {
       count: orders.length,
       orders,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
   }
-};
+);
 
 
 

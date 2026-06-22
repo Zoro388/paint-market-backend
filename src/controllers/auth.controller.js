@@ -3,7 +3,7 @@ import asyncHandler from "../utils/asyncHandler.js";
 import generateToken from "../utils/generateToken.js";
 import crypto from "crypto";
 import {  sendPasswordResetEmail,} from "../services/authEmail.service.js";
-
+import { sendWelcomeEmail } from "../services/email.service.js";
 
 export const signup =
   asyncHandler(async (req, res) => {
@@ -48,6 +48,13 @@ export const signup =
         phoneNumber,
         password,
       });
+
+    // Send welcome email
+    await sendWelcomeEmail({
+      email: user.email,
+      firstName:
+        user.firstName,
+    });
 
     const token =
       generateToken(user._id);

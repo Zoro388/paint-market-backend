@@ -41,8 +41,13 @@ router.post(
   forgotPassword
 );
 
-router.post(
-  "/reset-password/:token",
+// router.post(
+//   "/reset-password/:token",
+//   resetPassword
+// );
+
+router.put(
+  "/reset-password",
   resetPassword
 );
 router.get("/status", protect, checkAuthStatus);

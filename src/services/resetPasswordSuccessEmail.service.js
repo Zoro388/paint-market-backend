@@ -1,45 +1,60 @@
 import { sendEmail } from "./email.service.js";
 import { emailLayout } from "../templates/emailTemplate.js";
 
-export const sendPasswordResetEmail =
+export const sendResetPasswordSuccessEmail =
   async ({
     email,
     firstName,
-    resetUrl,
   }) => {
     const html = emailLayout({
-      title: "Reset Your Password",
-      subtitle: `Hello ${firstName}, we received a request to reset your Paint Domain account password.`,
+      title: "Password Updated Successfully",
+
+      subtitle: `Hello ${firstName}, your Paint Domain account password has been successfully updated.`,
 
       content: `
         <div
           style="
-            background:#F8F9FC;
-            border-left:4px solid #D4A017;
+            background:#ECFDF3;
+            border-left:4px solid #16A34A;
             padding:20px;
             border-radius:8px;
             margin-top:20px;
           "
         >
+          <h3
+            style="
+              margin-top:0;
+              color:#15803D;
+            "
+          >
+            Security Confirmation
+          </h3>
+
           <p
             style="
               color:#444;
               line-height:1.8;
-              margin:0;
             "
           >
-            If you requested a password reset,
-            click the button below to create a
-            new password.
+            Your account password was successfully changed.
+          </p>
+
+          <p
+            style="
+              color:#444;
+              line-height:1.8;
+            "
+          >
+            You can now sign in using your new password.
           </p>
         </div>
 
         <div
           style="
-            margin-top:25px;
             background:#FFF8E8;
             padding:20px;
             border-radius:8px;
+            margin-top:20px;
           "
         >
           <strong
@@ -47,7 +62,7 @@ export const sendPasswordResetEmail =
               color:#0A2E63;
             "
           >
-            Security Notice
+            Didn't make this change?
           </strong>
 
           <p
@@ -56,32 +71,19 @@ export const sendPasswordResetEmail =
               line-height:1.7;
             "
           >
-            This password reset link will expire
-            in 15 minutes for your protection.
-          </p>
-
-          <p
-            style="
-              color:#555;
-              line-height:1.7;
-            "
-          >
-            If you did not request this password
-            reset, you can safely ignore this email.
+            If you did not change your password,
+            please contact our support team immediately
+            and secure your account.
           </p>
         </div>
       `,
-
-      buttonText: "Reset Password",
-
-      buttonLink: resetUrl,
     });
 
     await sendEmail({
       to: email,
 
       subject:
-        "🔐 Reset Your Paint Domain Password",
+        "✅ Password Changed Successfully",
 
       html,
     });

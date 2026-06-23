@@ -1,8 +1,7 @@
 import PainterRequest from "../models/PainterRequest.js";
 import asyncHandler from "../utils/asyncHandler.js";
-import {
-  sendPainterResponseEmail,
-} from "../services/painterRequestEmail.service.js";
+// import {  sendPainterResponseEmail,} from "../services/painterRequestEmail.service.js";
+import { sendPainterResponseEmail } from "../services/painterRequestEmail.service.js";
 
 export const createPainterRequest =
   asyncHandler(async (req, res) => {
@@ -85,69 +84,80 @@ export const updatePainterStatus =
   });
 
 
-  export const respondToPainterRequest =
-asyncHandler(async (
-  req,
-  res
-) => {
+export const respondToPainterRequest =
+  asyncHandler(async (
+    req,
+    res
+  ) => {
 
-  const request =
-    await PainterRequest.findById(
-      req.params.id
-    );
+    const request =
+      await PainterRequest.findById(
+        req.params.id
+      );
 
-  if (!request) {
-    return res.status(404).json({
-      success: false,
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Painter request not found",
+      });
+    }
+
+    const {
+      estimatedCost,
+      inspectionDate,
+      adminResponse,
+      status,
+    } = req.body;
+
+    request.estimatedCost =
+      estimatedCost;
+
+    request.inspectionDate =
+      inspectionDate;
+
+    request.adminResponse =
+      adminResponse;
+
+    request.status =
+      status?.trim() ||
+      "quoted";
+
+    request.responseDate =
+      new Date();
+
+    await request.save();
+
+    try {
+      await sendPainterResponseEmail({
+        customerName:
+          request.fullName,
+
+        email:
+          request.email,
+
+        estimatedCost,
+
+        inspectionDate,
+
+        adminResponse,
+      });
+
+      console.log(
+        `Painter response email sent to ${request.email}`
+      );
+    } catch (error) {
+      console.error(
+        "Painter response email failed:",
+        error.message
+      );
+    }
+
+    res.status(200).json({
+      success: true,
       message:
-        "Painter request not found",
+        "Painter request updated successfully",
+      request,
     });
-  }
 
-  const {
-    estimatedCost,
-    inspectionDate,
-    adminResponse,
-    status,
-  } = req.body;
-
-  request.estimatedCost =
-    estimatedCost;
-
-  request.inspectionDate =
-    inspectionDate;
-
-  request.adminResponse =
-    adminResponse;
-
-  request.status =
-    status?.trim() ||
-    "quoted";
-
-  request.responseDate =
-    new Date();
-
-  await request.save();
-
-  await sendPainterResponseEmail({
-    customerName:
-      request.fullName,
-
-    email:
-      request.email,
-
-    estimatedCost,
-
-    inspectionDate,
-
-    adminResponse,
   });
-
-  res.status(200).json({
-    success: true,
-    message:
-      "Painter request response sent successfully",
-    request,
-  });
-
-});

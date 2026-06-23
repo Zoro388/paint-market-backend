@@ -1,71 +1,181 @@
-import resend from "../config/resend.js";
+import { sendEmail } from "./email.service.js";
+import { emailLayout } from "../templates/emailTemplate.js";
+
 export const sendPainterResponseEmail =
-async ({
-  customerName,
-  email,
-  estimatedCost,
-  inspectionDate,
-  adminResponse,
-}) => {
+  async ({
+    customerName,
+    email,
+    estimatedCost,
+    inspectionDate,
+    adminResponse,
+  }) => {
+    try {
+      const html = emailLayout({
+        title:
+          "Painter Request Update",
 
-  await resend.emails.send({
-    from: process.env.EMAIL_FROM,
+        subtitle: `Hello ${customerName}, our team has reviewed your painter request and provided an update below.`,
 
-    to: email,
+        content: `
+          <div
+            style="
+              background:#F8F9FC;
+              border-left:4px solid #D4A017;
+              padding:20px;
+              border-radius:8px;
+              margin-top:20px;
+            "
+          >
+            <h3
+              style="
+                margin-top:0;
+                color:#0A2E63;
+              "
+            >
+              Project Summary
+            </h3>
 
-    subject:
-      "Update On Your Painter Request",
+            <p
+              style="
+                color:#444;
+                line-height:1.8;
+              "
+            >
+              Thank you for choosing Paint Domain
+              for your painting project.
+            </p>
 
-    html: `
-      <div style="font-family: Arial, sans-serif;">
+            <p
+              style="
+                color:#444;
+                line-height:1.8;
+              "
+            >
+              Our team has carefully reviewed your
+              request and prepared the following
+              preliminary estimate.
+            </p>
+          </div>
 
-        <h2>
-          Paint Market Painter Request Update
-        </h2>
+          <div
+            style="
+              background:#FFF8E8;
+              padding:25px;
+              border-radius:8px;
+              margin-top:20px;
+              text-align:center;
+            "
+          >
+            <div
+              style="
+                color:#777;
+                font-size:14px;
+              "
+            >
+              Estimated Cost
+            </div>
 
-        <p>
-          Hello ${customerName},
-        </p>
+            <div
+              style="
+                font-size:32px;
+                font-weight:bold;
+                color:#0A2E63;
+                margin-top:10px;
+              "
+            >
+              ₦${Number(
+                estimatedCost || 0
+              ).toLocaleString()}
+            </div>
+          </div>
 
-        <p>
-          Thank you for requesting our painting services.
-        </p>
+          <div
+            style="
+              margin-top:20px;
+              background:#F8F9FC;
+              padding:20px;
+              border-radius:8px;
+            "
+          >
+            <strong
+              style="
+                color:#0A2E63;
+              "
+            >
+              Inspection Date
+            </strong>
 
-        <h3>
-          Estimated Cost:
-          ₦${Number(
-            estimatedCost
-          ).toLocaleString()}
-        </h3>
+            <p
+              style="
+                margin-top:10px;
+                color:#555;
+              "
+            >
+              ${
+                inspectionDate
+                  ? new Date(
+                      inspectionDate
+                    ).toDateString()
+                  : "To Be Communicated"
+              }
+            </p>
+          </div>
 
-        <p>
-          Inspection Date:
-          ${
-            inspectionDate
-              ? new Date(
-                  inspectionDate
-                ).toDateString()
-              : "To Be Communicated"
-          }
-        </p>
+          <div
+            style="
+              margin-top:20px;
+              background:#F8F9FC;
+              padding:20px;
+              border-radius:8px;
+            "
+          >
+            <strong
+              style="
+                color:#0A2E63;
+              "
+            >
+              Message From Our Team
+            </strong>
 
-        <h4>
-          Message From Our Team
-        </h4>
+            <p
+              style="
+                margin-top:10px;
+                color:#555;
+                line-height:1.8;
+              "
+            >
+              ${
+                adminResponse ||
+                "Our team will contact you shortly with further details."
+              }
+            </p>
+          </div>
+        `,
 
-        <p>
-          ${adminResponse}
-        </p>
+        buttonText:
+          "Visit Paint Domain",
 
-        <br>
+        buttonLink:
+          process.env.FRONTEND_URL ||
+          "https://paintdomain.com",
+      });
 
-        <p>
-          Regards,
-          <br>
-          Paint Market Team
-        </p>
+      await sendEmail({
+        to: email,
 
-      </div>
-    `,
-  });
-};
+        subject:
+          "🎨 Update On Your Painter Request",
+
+        html,
+      });
+
+      console.log(
+        `Painter response email sent to ${email}`
+      );
+    } catch (error) {
+      console.error(
+        "Painter response email error:",
+        error
+      );
+    }
+  };

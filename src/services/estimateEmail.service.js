@@ -1,88 +1,178 @@
-import { Resend } from "resend";
-
-const resend = new Resend(
-  process.env.RESEND_API_KEY
-);
+import { sendEmail } from "./email.service.js";
+import { emailLayout } from "../templates/emailTemplate.js";
 
 export const sendEstimateResponseEmail =
-async ({
-  customerName,
-  email,
-  estimatedAmount,
-  adminResponse,
-}) => {
+  async ({
+    customerName,
+    email,
+    estimatedAmount,
+    adminResponse,
+  }) => {
+    try {
 
-  await resend.emails.send({
+      const html = emailLayout({
+        title:
+          "Your Project Estimate Is Ready",
 
-    from:
-      process.env.EMAIL_FROM,
+        subtitle: `Hello ${customerName}, our team has completed the review of your project and prepared an estimate for you.`,
 
-    to: email,
+        content: `
+          <div
+            style="
+              background:#F8F9FC;
+              border-left:4px solid #D4A017;
+              padding:20px;
+              border-radius:8px;
+              margin-top:20px;
+            "
+          >
+            <h3
+              style="
+                margin-top:0;
+                color:#0A2E63;
+              "
+            >
+              Estimate Summary
+            </h3>
 
-    subject:
-      "Your Paint Market Estimate Is Ready",
+            <p
+              style="
+                color:#444;
+                line-height:1.8;
+              "
+            >
+              Thank you for choosing Paint Domain.
+            </p>
 
-    html: `
-      <div style="
-        font-family: Arial, sans-serif;
-        max-width: 600px;
-        margin: auto;
-        padding: 20px;
-      ">
+            <p
+              style="
+                color:#444;
+                line-height:1.8;
+              "
+            >
+              Based on the information provided,
+              our team has prepared the following
+              estimated project cost.
+            </p>
+          </div>
 
-        <h2 style="color:#0f172a;">
-          Paint Market Estimate Response
-        </h2>
+          <div
+            style="
+              background:#FFF8E8;
+              padding:25px;
+              border-radius:8px;
+              margin-top:20px;
+              text-align:center;
+            "
+          >
+            <div
+              style="
+                color:#777;
+                font-size:14px;
+              "
+            >
+              Estimated Project Cost
+            </div>
 
-        <p>
-          Hello ${customerName},
-        </p>
+            <div
+              style="
+                font-size:32px;
+                font-weight:bold;
+                color:#0A2E63;
+                margin-top:10px;
+              "
+            >
+              ₦${Number(
+                estimatedAmount || 0
+              ).toLocaleString()}
+            </div>
+          </div>
 
-        <p>
-          Thank you for requesting
-          a painting estimate from
-          Paint Market.
-        </p>
+          <div
+            style="
+              margin-top:20px;
+              background:#F8F9FC;
+              padding:20px;
+              border-radius:8px;
+            "
+          >
+            <strong
+              style="
+                color:#0A2E63;
+              "
+            >
+              Message From Our Team
+            </strong>
 
-        <div style="
-          background:#f8fafc;
-          padding:15px;
-          border-radius:8px;
-          margin:20px 0;
-        ">
-          <h3>
-            Estimated Amount:
-            ₦${Number(
-              estimatedAmount
-            ).toLocaleString()}
-          </h3>
-        </div>
+            <p
+              style="
+                margin-top:10px;
+                color:#555;
+                line-height:1.8;
+              "
+            >
+              ${
+                adminResponse ||
+                "Our team will contact you shortly with further information."
+              }
+            </p>
+          </div>
 
-        <h4>
-          Message From Our Team
-        </h4>
+          <div
+            style="
+              margin-top:20px;
+              background:#FFF8E8;
+              padding:20px;
+              border-radius:8px;
+            "
+          >
+            <strong
+              style="
+                color:#0A2E63;
+              "
+            >
+              Next Step
+            </strong>
 
-        <p>
-          ${adminResponse}
-        </p>
+            <p
+              style="
+                margin-top:10px;
+                color:#555;
+                line-height:1.8;
+              "
+            >
+              If you are satisfied with this estimate,
+              you can proceed with the project and our
+              team will guide you through the next phase.
+            </p>
+          </div>
+        `,
 
-        <br>
+        buttonText:
+          "Visit Paint Domain",
 
-        <p>
-          If you would like to
-          proceed with the project,
-          kindly contact our team.
-        </p>
+        buttonLink:
+          process.env.FRONTEND_URL ||
+          "https://paintdomain.com",
+      });
 
-        <br>
+      await sendEmail({
+        to: email,
 
-        <p>
-          Regards,
-          <br>
-          Paint Market Team
-        </p>
+        subject:
+          "📋 Your Paint Domain Estimate Is Ready",
 
-      </div>
-    `,
-  });
-};
+        html,
+      });
+
+      console.log(
+        `Estimate email sent to ${email}`
+      );
+
+    } catch (error) {
+      console.error(
+        "Estimate email error:",
+        error
+      );
+    }
+  };

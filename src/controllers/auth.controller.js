@@ -3,7 +3,12 @@ import asyncHandler from "../utils/asyncHandler.js";
 import generateToken from "../utils/generateToken.js";
 import crypto from "crypto";
 import {  sendPasswordResetEmail,} from "../services/authEmail.service.js";
-import { sendWelcomeEmail } from "../services/email.service.js";
+// import { sendWelcomeEmail } from "../services/email.service.js";
+import { sendResetPasswordSuccessEmail } from "../services/resetPasswordSuccessEmail.service.js";
+import { sendWelcomeEmail } from "../services/welcomeEmail.service.js";
+
+
+// import { sendWelcomeEmail } from "../services/welcomeEmail.service.js";
 
 export const signup =
   asyncHandler(async (req, res) => {
@@ -49,12 +54,23 @@ export const signup =
         password,
       });
 
-    // Send welcome email
-    await sendWelcomeEmail({
-      email: user.email,
-      firstName:
-        user.firstName,
-    });
+    // Send welcome email without breaking signup
+    try {
+      await sendWelcomeEmail({
+        email: user.email,
+        firstName:
+          user.firstName,
+      });
+
+      console.log(
+        `Welcome email sent to ${user.email}`
+      );
+    } catch (error) {
+      console.error(
+        "Welcome email failed:",
+        error.message
+      );
+    }
 
     const token =
       generateToken(user._id);
@@ -192,7 +208,7 @@ export const changePassword =
     });
 
     const resetUrl =
-      `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+      `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
     await sendPasswordResetEmail({
       email: user.email,
@@ -209,14 +225,13 @@ export const changePassword =
   });
 
 
-  export const resetPassword =
+export const resetPassword =
   asyncHandler(async (req, res) => {
-
     const hashedToken =
-      crypto
-        .createHash("sha256")
-        .update(req.params.token)
-        .digest("hex");
+  crypto
+    .createHash("sha256")
+    .update(req.query.token)
+    .digest("hex");
 
     const user =
       await User.findOne({
@@ -242,6 +257,17 @@ export const changePassword =
     } = req.body;
 
     if (
+      !password ||
+      !confirmPassword
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Password and confirm password are required",
+      });
+    }
+
+    if (
       password !==
       confirmPassword
     ) {
@@ -263,13 +289,26 @@ export const changePassword =
 
     await user.save();
 
-    res.status(200).json({
+    // Send success email
+    try {
+      await sendResetPasswordSuccessEmail({
+        email: user.email,
+        firstName:
+          user.firstName,
+      });
+    } catch (error) {
+      console.error(
+        "Reset password success email error:",
+        error
+      );
+    }
+
+    return res.status(200).json({
       success: true,
       message:
         "Password reset successfully",
     });
   });
-
 
 
 

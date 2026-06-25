@@ -55,7 +55,7 @@ export const emailLayout = ({
                 "
               >
                 <img
-                  src="YOUR_CLOUDINARY_LOGO_URL"
+                  src="https://www.image2url.com/r2/default/images/1782372232968-41e96014-c38c-4b54-b08f-c690fec3e69b.png"
                   alt="Paint Domain"
                   width="220"
                 />

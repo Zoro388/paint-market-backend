@@ -24,6 +24,7 @@ import blogRoutes from "./routes/blog.routes.js";
 import contactRoutes from "./routes/contact.routes.js";
 import cartRoutes from "./routes/cart.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
+import toolRoutes from "./routes/tool.routes.js";
 
 
 
@@ -157,6 +158,11 @@ app.use(
 app.use(
   "/api/admin",
   adminRoutes
+);
+
+app.use(
+  "/api/tools",
+  toolRoutes
 );
 /*
 |--------------------------------------------------------------------------

@@ -224,14 +224,25 @@ export const changePassword =
     });
   });
 
-
 export const resetPassword =
   asyncHandler(async (req, res) => {
+
+    const { token } =
+      req.query;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Reset token is required",
+      });
+    }
+
     const hashedToken =
-  crypto
-    .createHash("sha256")
-    .update(req.query.token)
-    .digest("hex");
+      crypto
+        .createHash("sha256")
+        .update(token)
+        .digest("hex");
 
     const user =
       await User.findOne({
@@ -289,7 +300,6 @@ export const resetPassword =
 
     await user.save();
 
-    // Send success email
     try {
       await sendResetPasswordSuccessEmail({
         email: user.email,
@@ -309,8 +319,6 @@ export const resetPassword =
         "Password reset successfully",
     });
   });
-
-
 
 export const checkAuthStatus = async (req, res) => {
   res.status(200).json({

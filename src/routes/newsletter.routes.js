@@ -4,6 +4,7 @@ import {
   subscribeNewsletter,
   getSubscribers,
   exportSubscribers,
+  sendNewsletterCampaign,
 } from "../controllers/newsletter.controller.js";
 
 import protect from "../middleware/auth.middleware.js";
@@ -28,6 +29,13 @@ router.get(
   protect,
   authorize("admin"),
   exportSubscribers
+);
+
+router.post(
+  "/send-campaign",
+  protect,
+  authorize("admin"),
+  sendNewsletterCampaign
 );
 
 export default router;

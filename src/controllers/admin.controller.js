@@ -53,3 +53,59 @@ export const getDashboardStats =
     });
 
   });
+
+
+  export const getAllUsers =
+  asyncHandler(async (req, res) => {
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+
+    const search = req.query.search || "";
+
+    const filter = search
+      ? {
+          $or: [
+            {
+              firstName: {
+                $regex: search,
+                $options: "i",
+              },
+            },
+            {
+              lastName: {
+                $regex: search,
+                $options: "i",
+              },
+            },
+            {
+              email: {
+                $regex: search,
+                $options: "i",
+              },
+            },
+          ],
+        }
+      : {};
+
+    const totalUsers =
+      await User.countDocuments(filter);
+
+    const users =
+      await User.find(filter)
+        .select("-password")
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit);
+
+    res.status(200).json({
+      success: true,
+      totalUsers,
+      page,
+      totalPages: Math.ceil(
+        totalUsers / limit
+      ),
+      users,
+    });
+
+  });

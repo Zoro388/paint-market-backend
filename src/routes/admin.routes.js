@@ -2,6 +2,7 @@ import express from "express";
 
 import {
   getDashboardStats,
+  getAllUsers,
 } from "../controllers/admin.controller.js";
 
 import protect from "../middleware/auth.middleware.js";

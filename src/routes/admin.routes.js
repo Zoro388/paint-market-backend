@@ -17,4 +17,13 @@ router.get(
   getDashboardStats
 );
 
+
+router.get(
+  "/users",
+  protect,
+  authorize("admin"),
+  getAllUsers
+);
 export default router;
+
+

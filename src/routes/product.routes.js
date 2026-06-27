@@ -10,6 +10,8 @@ import {
   getProduct,
   updateProduct,
   deleteProduct,
+  increaseProductStock,
+  decreaseProductStock,
 } from "../controllers/product.controller.js";
 
 const router = express.Router();
@@ -39,7 +41,19 @@ router.get("/", getProducts);
 
 router.get("/:id", getProduct);
 
+router.patch(
+  "/:id/increase-stock",
+  protect,
+  adminOnly,
+  increaseProductStock
+);
 
+router.patch(
+  "/:id/decrease-stock",
+  protect,
+  adminOnly,
+  decreaseProductStock
+);
 export default router;
 
 

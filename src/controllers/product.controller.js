@@ -91,3 +91,77 @@ export const deleteProduct =
         "Product deleted successfully",
     });
   });
+
+  
+  export const increaseProductStock =
+  asyncHandler(async (req, res) => {
+
+    const { quantity } = req.body;
+
+    if (!quantity || quantity <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Quantity must be greater than zero",
+      });
+    }
+
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    product.stockQuantity += Number(quantity);
+
+    await product.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Product stock increased successfully",
+      product,
+    });
+
+  });
+
+  export const decreaseProductStock =
+  asyncHandler(async (req, res) => {
+
+    const { quantity } = req.body;
+
+    if (!quantity || quantity <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Quantity must be greater than zero",
+      });
+    }
+
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    if (product.stockQuantity < quantity) {
+      return res.status(400).json({
+        success: false,
+        message: "Insufficient stock available",
+      });
+    }
+
+    product.stockQuantity -= Number(quantity);
+
+    await product.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Product stock decreased successfully",
+      product,
+    });
+
+  });

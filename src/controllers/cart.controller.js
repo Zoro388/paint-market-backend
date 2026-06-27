@@ -92,6 +92,16 @@ export const getMyCart =
 export const updateCartItem =
   asyncHandler(async (req, res) => {
 
+    const { quantity } = req.body;
+
+    if (!quantity || quantity < 1) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Quantity must be at least 1",
+      });
+    }
+
     const cart =
       await Cart.findOne({
         user: req.user._id,
@@ -120,17 +130,42 @@ export const updateCartItem =
       });
     }
 
-    item.quantity =
-      req.body.quantity;
+    // Optional: Check available stock
+    const product =
+      await Product.findById(
+        req.params.productId
+      );
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Product not found",
+      });
+    }
+
+    if (
+      quantity >
+      product.stockQuantity
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          `Only ${product.stockQuantity} item(s) available in stock`,
+      });
+    }
+
+    item.quantity = quantity;
 
     await cart.save();
 
     res.status(200).json({
       success: true,
       message:
-        "Cart updated",
+        "Cart updated successfully",
       cart,
     });
+
   });
 
 

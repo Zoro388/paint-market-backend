@@ -13,10 +13,15 @@ const toolSchema = new mongoose.Schema(
       required: true,
     },
 
-    image: {
-      type: String,
-      required: true,
-    },
+images: {
+  type: [String],
+  validate: {
+    validator: (value) =>
+      value.length >= 1 && value.length <= 3,
+    message:
+      "A tool must have between 1 and 3 images",
+  },
+}
   },
   {
     timestamps: true,

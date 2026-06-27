@@ -1,4 +1,5 @@
 import express from "express";
+import upload from "../middleware/upload.middleware.js";
 
 import {
   createTool,
@@ -28,6 +29,7 @@ router.post(
   "/",
   protect,
   authorize("admin"),
+  upload.array("images", 3),
   createTool
 );
 

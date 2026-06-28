@@ -1,5 +1,5 @@
 import express from "express";
-
+import upload from "../middleware/upload.middleware.js";
 
 import protect from "../middleware/auth.middleware.js";
 import adminOnly from "../middleware/admin.middleware.js";
@@ -20,6 +20,7 @@ router.post(
   "/",
   protect,
   adminOnly,
+  upload.array("productImages", 5),
   createProduct
 );
 
@@ -27,6 +28,7 @@ router.put(
   "/:id",
   protect,
   adminOnly,
+  upload.array("productImages", 5),
   updateProduct
 );
 

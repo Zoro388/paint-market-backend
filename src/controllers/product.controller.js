@@ -138,7 +138,6 @@ export const getProduct =
       product,
     });
   });
-
 export const updateProduct =
   asyncHandler(async (req, res) => {
 
@@ -155,74 +154,16 @@ export const updateProduct =
       });
     }
 
-    product.productName =
-      req.body.productName ||
-      product.productName;
+    let uploadedImages =
+      product.productImages;
 
-    product.productCategory =
-      req.body.productCategory ||
-      product.productCategory;
-
-    product.productDescription =
-      req.body.productDescription ||
-      product.productDescription;
-
-    product.colourCode =
-      req.body.colourCode ||
-      product.colourCode;
-
-    product.colourName =
-      req.body.colourName ||
-      product.colourName;
-
-    product.hex =
-      req.body.hex ||
-      product.hex;
-
-    product.price =
-      req.body.price ||
-      product.price;
-
-    product.stockQuantity =
-      req.body.stockQuantity ||
-      product.stockQuantity;
-
-    product.coverageInformation =
-      req.body.coverageInformation ||
-      product.coverageInformation;
-
-    product.status =
-      req.body.status ||
-      product.status;
-
-    if (
-      req.body.questions
-    ) {
-
-      product.questions =
-        JSON.parse(
-          req.body.questions
-        );
-
-    }
-
-    if (
-      req.body.productFeatures
-    ) {
-
-      product.productFeatures =
-        JSON.parse(
-          req.body.productFeatures
-        );
-
-    }
-
+    // Upload new images only if provided
     if (
       req.files &&
       req.files.length > 0
     ) {
 
-      const uploadedImages = [];
+      uploadedImages = [];
 
       for (const file of req.files) {
 
@@ -238,13 +179,79 @@ export const updateProduct =
         uploadedImages.push(
           result.secure_url
         );
-
       }
-
-      product.productImages =
-        uploadedImages;
-
     }
+
+    let questions =
+      product.questions;
+
+    if (req.body.questions) {
+      questions =
+        JSON.parse(
+          req.body.questions
+        );
+    }
+
+    let productFeatures =
+      product.productFeatures;
+
+    if (
+      req.body.productFeatures
+    ) {
+      productFeatures =
+        JSON.parse(
+          req.body.productFeatures
+        );
+    }
+
+    product.productName =
+      req.body.productName ??
+      product.productName;
+
+    product.productCategory =
+      req.body.productCategory ??
+      product.productCategory;
+
+    product.productDescription =
+      req.body.productDescription ??
+      product.productDescription;
+
+    product.colourCode =
+      req.body.colourCode ??
+      product.colourCode;
+
+    product.colourName =
+      req.body.colourName ??
+      product.colourName;
+
+    product.hex =
+      req.body.hex ??
+      product.hex;
+
+    product.price =
+      req.body.price ??
+      product.price;
+
+    product.stockQuantity =
+      req.body.stockQuantity ??
+      product.stockQuantity;
+
+    product.coverageInformation =
+      req.body.coverageInformation ??
+      product.coverageInformation;
+
+    product.status =
+      req.body.status ??
+      product.status;
+
+    product.productImages =
+      uploadedImages;
+
+    product.productFeatures =
+      productFeatures;
+
+    product.questions =
+      questions;
 
     await product.save();
 
@@ -256,7 +263,6 @@ export const updateProduct =
     });
 
   });
-
 export const deleteProduct =
   asyncHandler(async (req, res) => {
     const product =

@@ -1,5 +1,25 @@
 import mongoose from "mongoose";
 
+const questionSchema =
+  new mongoose.Schema(
+    {
+      question: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+
+      answer: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+    },
+    {
+      _id: false,
+    }
+  );
+
 const productSchema =
   new mongoose.Schema(
     {
@@ -33,6 +53,12 @@ const productSchema =
         type: String,
       },
 
+      // NEW
+      hex: {
+        type: String,
+        default: "",
+      },
+
       price: {
         type: Number,
         required: true,
@@ -52,6 +78,12 @@ const productSchema =
           type: String,
         },
       ],
+
+      // NEW
+      questions: {
+        type: [questionSchema],
+        default: [],
+      },
 
       status: {
         type: String,

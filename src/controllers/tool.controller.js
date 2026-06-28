@@ -105,32 +105,58 @@ export const createTool = asyncHandler(async (req, res) => {
   });
 
 
-  export const updateTool =
+export const updateTool =
   asyncHandler(async (req, res) => {
+
     const tool =
-      await Tool.findById(
-        req.params.id
-      );
+      await Tool.findById(req.params.id);
 
     if (!tool) {
       return res.status(404).json({
         success: false,
-        message:
-          "Tool not found",
+        message: "Tool not found",
       });
     }
 
-    tool.name =
-      req.body.name ||
-      tool.name;
+    const {
+      name,
+      description,
+    } = req.body;
 
-    tool.description =
-      req.body.description ||
-      tool.description;
+    if (name) {
+      tool.name = name;
+    }
 
-    tool.image =
-      req.body.image ||
-      tool.image;
+    if (description) {
+      tool.description = description;
+    }
+
+    // Only replace images if new ones were uploaded
+    if (
+      req.files &&
+      req.files.length > 0
+    ) {
+
+      const uploadedImages = [];
+
+      for (const file of req.files) {
+
+        const result =
+          await cloudinary.uploader.upload(
+            `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+            {
+              folder: "paint-market/tools",
+            }
+          );
+
+        uploadedImages.push(
+          result.secure_url
+        );
+      }
+
+      tool.images =
+        uploadedImages;
+    }
 
     await tool.save();
 
@@ -140,6 +166,7 @@ export const createTool = asyncHandler(async (req, res) => {
         "Tool updated successfully",
       tool,
     });
+
   });
 
   export const deleteTool =

@@ -173,24 +173,39 @@ export const updateTool =
   asyncHandler(async (req, res) => {
 
     const tool =
-      await Tool.findById(
-        req.params.id
-      );
+      await Tool.findById(req.params.id);
 
     if (!tool) {
       return res.status(404).json({
         success: false,
-        message:
-          "Tool not found",
+        message: "Tool not found",
       });
+    }
+
+    // Delete images from Cloudinary
+    if (tool.images && tool.images.length > 0) {
+
+      for (const image of tool.images) {
+
+        // Extract public_id from URL
+        const publicId =
+          image
+            .split("/")
+            .slice(-2)
+            .join("/")
+            .split(".")[0];
+
+        await cloudinary.uploader.destroy(publicId);
+
+      }
+
     }
 
     await tool.deleteOne();
 
     res.status(200).json({
       success: true,
-      message:
-        "Tool deleted successfully",
+      message: "Tool deleted successfully",
     });
 
   });

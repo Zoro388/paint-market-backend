@@ -37,6 +37,7 @@ router.put(
   "/:id",
   protect,
   authorize("admin"),
+  upload.array("images", 3),
   updateTool
 );
 

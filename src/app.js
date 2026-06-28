@@ -25,7 +25,7 @@ import contactRoutes from "./routes/contact.routes.js";
 import cartRoutes from "./routes/cart.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import toolRoutes from "./routes/tool.routes.js";
-
+import mediaRoutes from "./routes/media.routes.js";
 
 
 
@@ -163,6 +163,12 @@ app.use(
 app.use(
   "/api/tools",
   toolRoutes
+);
+
+
+app.use(
+  "/api/media",
+  mediaRoutes
 );
 /*
 |--------------------------------------------------------------------------

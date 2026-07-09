@@ -26,6 +26,7 @@ import cartRoutes from "./routes/cart.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import toolRoutes from "./routes/tool.routes.js";
 import mediaRoutes from "./routes/media.routes.js";
+import siteSettingsRoutes from "./routes/siteSettings.routes.js";
 
 
 
@@ -169,6 +170,11 @@ app.use(
 app.use(
   "/api/media",
   mediaRoutes
+);
+
+app.use(
+  "/api/settings",
+  siteSettingsRoutes
 );
 /*
 |--------------------------------------------------------------------------

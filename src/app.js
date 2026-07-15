@@ -27,6 +27,8 @@ import adminRoutes from "./routes/admin.routes.js";
 import toolRoutes from "./routes/tool.routes.js";
 import mediaRoutes from "./routes/media.routes.js";
 import siteSettingsRoutes from "./routes/siteSettings.routes.js";
+import masterDataRoutes from "./routes/masterData.routes.js";
+import painterRoutes from "./routes/painter.routes.js";
 
 
 
@@ -176,6 +178,13 @@ app.use(
   "/api/settings",
   siteSettingsRoutes
 );
+
+app.use(
+  "/api/master-data",
+  masterDataRoutes
+);
+
+app.use("/api/painters", painterRoutes);
 /*
 |--------------------------------------------------------------------------
 | Error Handling

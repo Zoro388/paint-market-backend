@@ -36,19 +36,25 @@ const userSchema =
         select: false,
       },
 
-      profileImage: {
-        type: String,
-        default: "",
-      },
+      // profileImage: {
+      //   type: String,
+      //   default: "",
+      // },
 
       role: {
-        type: String,
-        enum: [
-          "customer",
-          "admin",
-        ],
-        default: "customer",
-      },
+  type: String,
+  enum: [
+    "customer",
+    "painter",
+    "admin",
+  ],
+  default: "customer",
+},
+
+isApproved: {
+  type: Boolean,
+  default: false,
+},
 
       // NEW
       resetPasswordToken: {

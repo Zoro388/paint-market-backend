@@ -1,66 +1,84 @@
 import Tool from "../models/Tool.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import cloudinary from "../config/cloudinary.js";
-import streamifier from "streamifier";
+// import streamifier from "streamifier";
+import { uploadBuffer, deleteFile } from "../utils/cloudinaryUpload.js";
 
-export const createTool = asyncHandler(async (req, res) => {
-  const { name, description } = req.body;
+export const createTool =
+asyncHandler(async (req, res) => {
+
+  const {
+    name,
+    description,
+  } = req.body;
 
   if (!name || !description) {
     return res.status(400).json({
       success: false,
-      message: "Name and description are required",
+      message:
+        "Name and description are required",
     });
   }
 
-  if (!req.files || req.files.length === 0) {
+  if (
+    !req.files ||
+    req.files.length === 0
+  ) {
     return res.status(400).json({
       success: false,
-      message: "Please upload at least one image.",
+      message:
+        "Please upload at least one image.",
     });
   }
 
   if (req.files.length > 3) {
     return res.status(400).json({
       success: false,
-      message: "Maximum of 3 images allowed.",
+      message:
+        "Maximum of 3 images allowed.",
     });
   }
 
   const uploadedImages = [];
 
   for (const file of req.files) {
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          folder: "paintmarket/tools",
-        },
-        (error, result) => {
-          if (error) return reject(error);
-          resolve(result);
-        }
+
+    const result =
+      await uploadBuffer(
+        file,
+        "paintmarket/tools"
       );
 
-      streamifier.createReadStream(file.buffer).pipe(stream);
-    });
+    uploadedImages.push(
+      result.secure_url
+    );
 
-    uploadedImages.push(result.secure_url);
   }
 
-  const tool = await Tool.create({
-    name,
-    description,
-    images: uploadedImages,
-  });
+  const tool =
+    await Tool.create({
 
-  return res.status(201).json({
+      name,
+
+      description,
+
+      images:
+        uploadedImages,
+
+    });
+
+  res.status(201).json({
+
     success: true,
-    message: "Tool created successfully.",
+
+    message:
+      "Tool created successfully.",
+
     tool,
+
   });
+
 });
-
-
 
 
 
@@ -142,12 +160,10 @@ export const updateTool =
       for (const file of req.files) {
 
         const result =
-          await cloudinary.uploader.upload(
-            `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
-            {
-              folder: "paint-market/tools",
-            }
-          );
+await uploadBuffer(
+  file,
+  "paintmarket/tools"
+);
 
         uploadedImages.push(
           result.secure_url
@@ -195,7 +211,7 @@ export const updateTool =
             .join("/")
             .split(".")[0];
 
-        await cloudinary.uploader.destroy(publicId);
+        await deleteFile(publicId);
 
       }
 

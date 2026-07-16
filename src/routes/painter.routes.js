@@ -19,6 +19,12 @@ import {
 
     rejectPainter,
 
+    uploadVerificationVideo,
+    getPainterStatus,
+getPainterDashboard,
+getPublicPainters,
+getPublicPainterById,
+
 }
 from "../controllers/painter.controller.js";
 
@@ -74,6 +80,18 @@ authorize("admin"),
 getPendingPainters
 
 );
+/*
+|--------------------------------------------------------------------------
+| PAINTER DASHBOARD
+|--------------------------------------------------------------------------
+*/
+
+router.get(
+  "/dashboard",
+  protect,
+  authorize("painter"),
+  getPainterDashboard
+);
 
 router.get(
 
@@ -87,16 +105,27 @@ getApprovedPainters
 
 );
 
+/*
+|--------------------------------------------------------------------------
+| PUBLIC
+|--------------------------------------------------------------------------
+*/
+
 router.get(
+"/",
+getPublicPainters
+);
 
+router.get(
 "/:id",
+getPublicPainterById
+);
 
+router.get(
+"/:id",
 protect,
-
 authorize("admin"),
-
 getPainterById
-
 );
 
 router.patch(
@@ -122,5 +151,29 @@ authorize("admin"),
 rejectPainter
 
 );
+
+
+router.patch(
+  "/upload-verification-video",
+  protect,
+  authorize("painter"),
+  painterUpload.fields([
+    {
+      name: "verificationVideo",
+      maxCount: 1,
+    },
+  ]),
+  uploadVerificationVideo
+);
+
+
+router.get(
+  "/me/status",
+  protect,
+  authorize("painter"),
+  getPainterStatus
+);
+
+
 
 export default router;

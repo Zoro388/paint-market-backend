@@ -29,6 +29,7 @@ import mediaRoutes from "./routes/media.routes.js";
 import siteSettingsRoutes from "./routes/siteSettings.routes.js";
 import masterDataRoutes from "./routes/masterData.routes.js";
 import painterRoutes from "./routes/painter.routes.js";
+import reviewRoutes from "./routes/review.routes.js";
 
 
 
@@ -179,6 +180,10 @@ app.use(
   siteSettingsRoutes
 );
 
+app.use(
+"/api/reviews",
+reviewRoutes
+);
 app.use(
   "/api/master-data",
   masterDataRoutes

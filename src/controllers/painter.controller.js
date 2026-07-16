@@ -18,8 +18,8 @@ import { deleteFile } from "../utils/cloudinaryUpload.js";
 import { sendPainterPendingEmail } from "../services/painterPendingEmail.service.js";
 import { sendPainterRejectedEmail } from "../services/painterRejectedEmail.service.js";
 import { sendPainterApprovedEmail } from "../services/painterApprovedEmail.service.js";
-
-
+// import PainterProfile from "../models/PainterProfile.js";
+// import { uploadBuffer, deleteFile } from "../utils/cloudinaryUpload.js";
 /*
 |--------------------------------------------------------------------------
 | REGISTER PAINTER
@@ -79,9 +79,6 @@ asyncHandler(async (req, res) => {
         const profileImage =
         req.files?.profileImage?.[0];
 
-        const verificationVideo =
-        req.files?.verificationVideo?.[0];
-
         const portfolioImages =
         req.files?.portfolioImages || [];
 
@@ -136,22 +133,6 @@ asyncHandler(async (req, res) => {
                 success:false,
 
                 message:"Profile image is required."
-
-            });
-
-        }
-
-        if(!verificationVideo){
-
-            await session.abortTransaction();
-
-            session.endSession();
-
-            return res.status(400).json({
-
-                success:false,
-
-                message:"Verification video is required."
 
             });
 
@@ -219,23 +200,6 @@ asyncHandler(async (req, res) => {
 
         /*
         |--------------------------------------------------------------------------
-        | UPLOAD VERIFICATION VIDEO
-        |--------------------------------------------------------------------------
-        */
-
-        const uploadedVerificationVideo =
-        await uploadBuffer(
-
-            verificationVideo,
-
-            "paintmarket/painters/verification",
-
-            "video"
-
-        );
-
-        /*
-        |--------------------------------------------------------------------------
         | UPLOAD PORTFOLIO IMAGES
         |--------------------------------------------------------------------------
         */
@@ -262,28 +226,32 @@ asyncHandler(async (req, res) => {
             });
 
         }
-                /*
+
+        /*
         |--------------------------------------------------------------------------
         | CREATE USER
         |--------------------------------------------------------------------------
         */
 
         const createdUsers = await User.create(
-  [
-    {
-      firstName,
-      lastName,
-      email,
-      phoneNumber,
-      password,
-      role: "painter",
-      isApproved: false,
-    },
-  ],
-  { session }
-);
+        [
+            {
+                firstName,
+                lastName,
+                email,
+                phoneNumber,
+                password,
+                role:"painter",
+                isApproved:false,
+            },
+        ],
+        {
+            session,
+        });
 
-const user = createdUsers[0];
+        const user =
+        createdUsers[0];
+
         /*
         |--------------------------------------------------------------------------
         | CALCULATE PROFILE COMPLETION
@@ -291,33 +259,26 @@ const user = createdUsers[0];
         */
 
         const profileCompletion =
-calculatePainterProfileCompletion({
+        calculatePainterProfileCompletion({
 
-  bio,
+            bio,
 
-  profileImage:
-  uploadedProfileImage,
+            profileImage:
+            uploadedProfileImage,
 
-  portfolioImages:
-  uploadedPortfolioImages,
+            portfolioImages:
+            uploadedPortfolioImages,
 
-  verificationVideo:{
+            skills:
+            parseArrayField(skills),
 
-    url:
-    uploadedVerificationVideo.secure_url,
+            services:
+            parseArrayField(services),
 
-  },
+            preferredBrands:
+            parseArrayField(preferredBrands),
 
-  skills:
-  parseArrayField(skills),
-
-  services:
-  parseArrayField(services),
-
-  preferredBrands:
-  parseArrayField(preferredBrands),
-
-});
+        });
 
         /*
         |--------------------------------------------------------------------------
@@ -326,8 +287,10 @@ calculatePainterProfileCompletion({
         */
 
         const createdPainterProfiles =
-await PainterProfile.create(
-            [{
+        await PainterProfile.create(
+        [
+            {
+
                 user:user._id,
 
                 bio,
@@ -338,11 +301,14 @@ await PainterProfile.create(
 
                 city,
 
-                skills: parseArrayField(skills),
+                skills:
+                parseArrayField(skills),
 
-                services: parseArrayField(services),
+                services:
+                parseArrayField(services),
 
-                preferredBrands: parseArrayField(preferredBrands),
+                preferredBrands:
+                parseArrayField(preferredBrands),
 
                 profileImage:{
 
@@ -359,11 +325,9 @@ await PainterProfile.create(
 
                 verificationVideo:{
 
-                    url:
-                    uploadedVerificationVideo.secure_url,
+                    url:"",
 
-                    publicId:
-                    uploadedVerificationVideo.public_id,
+                    publicId:"",
 
                 },
 
@@ -371,13 +335,14 @@ await PainterProfile.create(
 
                 profileCompletion,
 
-            }],
-            {
-                session,
-            }
-        );
+            },
+        ],
+        {
+            session,
+        });
+
         const painter =
-createdPainterProfiles[0];
+        createdPainterProfiles[0];
 
         /*
         |--------------------------------------------------------------------------
@@ -389,29 +354,40 @@ createdPainterProfiles[0];
 
         session.endSession();
 
+        /*
+        |--------------------------------------------------------------------------
+        | SEND EMAIL IN BACKGROUND
+        |--------------------------------------------------------------------------
+        */
 
+        sendPainterPendingEmail({
 
-/*
-|--------------------------------------------------------------------------
-| SEND EMAIL IN BACKGROUND
-|--------------------------------------------------------------------------
-*/
+            email:user.email,
 
-sendPainterPendingEmail({
-  email: user.email,
-  firstName: user.firstName,
-})
-.then(() => {
-  console.log(
-    `Pending painter email sent to ${user.email}`
-  );
-})
-.catch((error) => {
-  console.error(
-    "Painter pending email failed:",
-    error.message
-  );
-});
+            firstName:user.firstName,
+
+        })
+        .then(() => {
+
+            console.log(
+
+                `Pending painter email sent to ${user.email}`
+
+            );
+
+        })
+        .catch((error) => {
+
+            console.error(
+
+                "Painter pending email failed:",
+
+                error.message
+
+            );
+
+        });
+
         /*
         |--------------------------------------------------------------------------
         | RETURN RESPONSE
@@ -426,6 +402,7 @@ sendPainterPendingEmail({
             "Painter registration submitted successfully. Your application is awaiting approval.",
 
             painter,
+
         });
 
     }
@@ -972,5 +949,719 @@ export const rejectPainter = asyncHandler(async (req, res) => {
         throw error;
 
     }
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| UPLOAD VERIFICATION VIDEO
+|--------------------------------------------------------------------------
+*/
+
+export const uploadVerificationVideo =
+asyncHandler(async (req, res) => {
+
+    const session =
+    await mongoose.startSession();
+
+    session.startTransaction();
+
+    try {
+
+        /*
+        |--------------------------------------------------------------------------
+        | GET PAINTER
+        |--------------------------------------------------------------------------
+        */
+
+        const painter =
+        await PainterProfile.findOne({
+
+            user: req.user._id,
+
+        }).session(session);
+
+        if (!painter) {
+
+            await session.abortTransaction();
+
+            session.endSession();
+
+            return res.status(404).json({
+
+                success: false,
+
+                message: "Painter profile not found.",
+
+            });
+
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | VALIDATE FILE
+        |--------------------------------------------------------------------------
+        */
+
+        const verificationVideo =
+        req.files?.verificationVideo?.[0];
+
+        if (!verificationVideo) {
+
+            await session.abortTransaction();
+
+            session.endSession();
+
+            return res.status(400).json({
+
+                success: false,
+
+                message: "Please upload a verification video.",
+
+            });
+
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | DELETE OLD VIDEO IF EXISTS
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+
+            painter.verificationVideo?.publicId
+
+        ) {
+
+            await deleteFile(
+
+                painter.verificationVideo.publicId,
+
+                "video"
+
+            );
+
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | UPLOAD NEW VIDEO
+        |--------------------------------------------------------------------------
+        */
+
+        const uploadedVideo =
+        await uploadBuffer(
+
+            verificationVideo,
+
+            "paintmarket/painters/verification",
+
+            "video"
+
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | UPDATE PAINTER
+        |--------------------------------------------------------------------------
+        */
+
+        painter.verificationVideo = {
+
+            url: uploadedVideo.secure_url,
+
+            publicId: uploadedVideo.public_id,
+
+        };
+
+        /*
+        |--------------------------------------------------------------------------
+        | RECALCULATE PROFILE COMPLETION
+        |--------------------------------------------------------------------------
+        */
+
+        painter.profileCompletion =
+        calculatePainterProfileCompletion({
+
+            bio: painter.bio,
+
+            profileImage: painter.profileImage,
+
+            portfolioImages: painter.portfolioImages,
+
+            verificationVideo:
+            painter.verificationVideo,
+
+            skills: painter.skills,
+
+            services: painter.services,
+
+            preferredBrands:
+            painter.preferredBrands,
+
+        });
+
+        await painter.save({
+
+            session,
+
+        });
+
+        await session.commitTransaction();
+
+        session.endSession();
+
+        /*
+        |--------------------------------------------------------------------------
+        | RETURN RESPONSE
+        |--------------------------------------------------------------------------
+        */
+
+        return res.status(200).json({
+
+            success: true,
+
+            message:
+            "Verification video uploaded successfully. Your application is now ready for review.",
+
+            verificationVideo:
+            painter.verificationVideo,
+
+            profileCompletion:
+            painter.profileCompletion,
+
+        });
+
+    }
+
+    catch (error) {
+
+        await session.abortTransaction();
+
+        session.endSession();
+
+        throw error;
+
+    }
+
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| GET PAINTER STATUS
+|--------------------------------------------------------------------------
+*/
+
+export const getPainterStatus =
+asyncHandler(async (req, res) => {
+
+    const painter =
+    await PainterProfile.findOne({
+
+        user: req.user._id,
+
+    });
+
+    if (!painter) {
+
+        return res.status(404).json({
+
+            success: false,
+
+            message: "Painter profile not found.",
+
+        });
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | SCREEN FLOW
+    |--------------------------------------------------------------------------
+    */
+
+    let screen = "";
+
+    let message = "";
+
+    /*
+    |--------------------------------------------------------------------------
+    | REJECTED
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+
+        painter.approvalStatus === "rejected"
+
+    ) {
+
+        screen = "rejected";
+
+        message =
+        painter.rejectionReason ||
+        "Your application was rejected.";
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | APPROVED
+    |--------------------------------------------------------------------------
+    */
+
+    else if (
+
+        painter.approvalStatus === "approved"
+
+    ) {
+
+        screen = "dashboard";
+
+        message =
+        "Your account has been approved.";
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | PENDING
+    |--------------------------------------------------------------------------
+    */
+
+    else {
+
+        if (
+
+            !painter.verificationVideo?.url
+
+        ) {
+
+            screen =
+            "upload_verification";
+
+            message =
+            "Please upload your verification video to complete your application.";
+
+        }
+
+        else {
+
+            screen =
+            "waiting_review";
+
+            message =
+            "Your verification video has been submitted successfully. Our team is reviewing your application.";
+
+        }
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | RESPONSE
+    |--------------------------------------------------------------------------
+    */
+
+    return res.status(200).json({
+
+        success: true,
+
+        approvalStatus:
+        painter.approvalStatus,
+
+        screen,
+
+        message,
+
+        profileCompletion:
+        painter.profileCompletion,
+
+        verificationVideoUploaded:
+        !!painter.verificationVideo?.url,
+
+        rejectionReason:
+        painter.rejectionReason,
+
+        isVerified:
+        painter.isVerified,
+
+    });
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| GET PAINTER DASHBOARD
+|--------------------------------------------------------------------------
+*/
+
+export const getPainterDashboard =
+asyncHandler(async (req, res) => {
+
+    /*
+    |--------------------------------------------------------------------------
+    | GET PAINTER PROFILE
+    |--------------------------------------------------------------------------
+    */
+
+    const painter =
+    await PainterProfile.findOne({
+
+        user: req.user._id,
+
+    }).populate(
+
+        "user",
+
+        "firstName lastName email phoneNumber"
+
+    );
+
+    if (!painter) {
+
+        return res.status(404).json({
+
+            success: false,
+
+            message:
+            "Painter profile not found.",
+
+        });
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | ONLY APPROVED PAINTERS
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+
+        painter.approvalStatus !== "approved"
+
+    ) {
+
+        return res.status(403).json({
+
+            success: false,
+
+            message:
+            "Your account is yet to be approved.",
+
+        });
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | DASHBOARD RESPONSE
+    |--------------------------------------------------------------------------
+    */
+
+    return res.status(200).json({
+
+        success: true,
+
+        painter: {
+
+            id: painter._id,
+
+            firstName:
+            painter.user.firstName,
+
+            lastName:
+            painter.user.lastName,
+
+            email:
+            painter.user.email,
+
+            phoneNumber:
+            painter.user.phoneNumber,
+
+            profileImage:
+            painter.profileImage,
+
+            state:
+            painter.state,
+
+            city:
+            painter.city,
+
+            yearsOfExperience:
+            painter.yearsOfExperience,
+
+            availabilityStatus:
+            painter.availabilityStatus,
+
+            averageRating:
+            painter.averageRating,
+
+            totalReviews:
+            painter.totalReviews,
+
+            completedJobs:
+            painter.completedJobs,
+
+            profileViews:
+            painter.profileViews,
+
+            profileCompletion:
+            painter.profileCompletion,
+
+            isFeatured:
+            painter.isFeatured,
+
+            isVerified:
+            painter.isVerified,
+
+        },
+
+        statistics: {
+
+            pendingQuoteRequests: 0,
+
+            pendingInspectionRequests: 0,
+
+            unreadReviews: 0,
+
+        }
+
+    });
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| GET PUBLIC PAINTERS
+|--------------------------------------------------------------------------
+*/
+
+import Review from "../models/Review.js";
+
+export const getPublicPainters =
+asyncHandler(async(req,res)=>{
+
+const painters=
+
+await PainterProfile.find({
+
+approvalStatus:"approved",
+
+})
+
+.populate({
+
+path:"user",
+
+select:"firstName lastName",
+
+})
+
+.sort({
+
+createdAt:-1,
+
+});
+
+const formattedPainters=
+
+await Promise.all(
+
+painters.map(async(painter)=>{
+
+const reviews=
+
+await Review.find({
+
+painter:painter._id,
+
+isVisible:true,
+
+});
+
+const totalReviews=
+
+reviews.length;
+
+const averageRating=
+
+totalReviews===0
+
+?0
+
+:
+
+reviews.reduce(
+
+(sum,item)=>sum+item.rating,
+
+0
+
+)/totalReviews;
+
+return{
+
+_id:painter._id,
+
+fullName:`${painter.user.firstName} ${painter.user.lastName}`,
+
+profileImage:painter.profileImage?.url||"",
+
+bio:painter.bio,
+
+yearsOfExperience:painter.yearsOfExperience,
+
+state:painter.state,
+
+city:painter.city,
+
+skills:painter.skills,
+
+services:painter.services,
+
+preferredBrands:painter.preferredBrands,
+
+averageRating:Number(
+
+averageRating.toFixed(1)
+
+),
+
+totalReviews,
+
+};
+
+})
+
+);
+
+return res.status(200).json({
+
+success:true,
+
+count:formattedPainters.length,
+
+painters:formattedPainters,
+
+});
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| GET PUBLIC PAINTER BY ID
+|--------------------------------------------------------------------------
+*/
+
+export const getPublicPainterById =
+asyncHandler(async(req,res)=>{
+
+const painter=
+await PainterProfile.findOne({
+
+_id:req.params.id,
+
+approvalStatus:"approved",
+
+})
+
+.populate({
+
+path:"user",
+
+select:"firstName lastName",
+
+});
+
+if(!painter){
+
+return res.status(404).json({
+
+success:false,
+
+message:"Painter not found."
+
+});
+
+}
+
+const reviews=
+await Review.find({
+
+painter:painter._id,
+
+isVisible:true,
+
+})
+.sort({
+
+createdAt:-1,
+
+});
+
+const totalReviews=
+reviews.length;
+
+const averageRating=
+
+totalReviews===0
+
+?0
+
+:
+
+reviews.reduce(
+
+(sum,item)=>sum+item.rating,
+
+0
+
+)/totalReviews;
+
+return res.status(200).json({
+
+success:true,
+
+painter:{
+
+_id:painter._id,
+
+fullName:`${painter.user.firstName} ${painter.user.lastName}`,
+
+profileImage:painter.profileImage?.url||"",
+
+bio:painter.bio,
+
+yearsOfExperience:painter.yearsOfExperience,
+
+state:painter.state,
+
+city:painter.city,
+
+skills:painter.skills,
+
+services:painter.services,
+
+preferredBrands:painter.preferredBrands,
+
+portfolioImages:painter.portfolioImages,
+
+averageRating:Number(
+
+averageRating.toFixed(1)
+
+),
+
+totalReviews,
+
+reviews,
+
+},
+
+});
 
 });

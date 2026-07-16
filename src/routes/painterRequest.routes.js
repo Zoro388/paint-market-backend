@@ -6,6 +6,9 @@ import {
   getPainterRequest,
   updatePainterStatus,
   respondToPainterRequest,
+  getMyPainterRequests,
+  acceptPainterRequest,
+  declinePainterRequest,
 } from "../controllers/painterRequest.controller.js";
 
 import protect from "../middleware/auth.middleware.js";
@@ -23,6 +26,42 @@ router.get(
   protect,
   authorize("admin"),
   getPainterRequests
+);
+
+router.get(
+
+"/my-requests",
+
+protect,
+
+authorize("painter"),
+
+getMyPainterRequests
+
+);
+
+router.patch(
+
+"/:id/accept",
+
+protect,
+
+authorize("painter"),
+
+acceptPainterRequest
+
+);
+
+router.patch(
+
+"/:id/decline",
+
+protect,
+
+authorize("painter"),
+
+declinePainterRequest
+
 );
 
 router.get(

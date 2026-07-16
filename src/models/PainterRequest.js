@@ -63,26 +63,44 @@ const painterRequestSchema =
       responseDate: {
         type: Date,
       },
+      /*
+|--------------------------------------------------------------------------
+| SELECTED PAINTER
+|--------------------------------------------------------------------------
+*/
 
-      status: {
-        type: String,
-        enum: [
-          "pending",
-          "reviewing",
-          "contacted",
-          "quoted",
-          "scheduled",
-          "assigned",
-          "completed",
-          "cancelled",
-        ],
-        default: "pending",
-      },
+selectedPainter: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "PainterProfile",
+  default: null,
+},
+
+assignedBy: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User",
+  default: null,
+},
+
+      status:{
+type:String,
+enum:[
+"pending",
+"accepted",
+"declined",
+"inspection_booked",
+"quotation_sent",
+"work_in_progress",
+"completed",
+"cancelled",
+],
+default:"pending",
+},
     },
     {
       timestamps: true,
     }
   );
+
 
 export default mongoose.model(
   "PainterRequest",

@@ -2,13 +2,27 @@ import PainterRequest from "../models/PainterRequest.js";
 import asyncHandler from "../utils/asyncHandler.js";
 // import {  sendPainterResponseEmail,} from "../services/painterRequestEmail.service.js";
 import { sendPainterResponseEmail } from "../services/painterRequestEmail.service.js";
+import PainterProfile from "../models/PainterProfile.js";
 
 export const createPainterRequest =
   asyncHandler(async (req, res) => {
-    const request =
-      await PainterRequest.create(
-        req.body
-      );
+    const {
+
+    selectedPainter,
+
+    ...requestData
+
+} = req.body;
+
+const request =
+await PainterRequest.create({
+
+    ...requestData,
+
+    selectedPainter:
+    selectedPainter || null,
+
+});
 
     res.status(201).json({
       success: true,
@@ -21,11 +35,29 @@ export const createPainterRequest =
 export const getPainterRequests =
   asyncHandler(async (req, res) => {
     const requests =
-      await PainterRequest.find().sort(
-        {
-          createdAt: -1,
-        }
-      );
+      await PainterRequest.find()
+
+.populate({
+
+    path:"selectedPainter",
+
+    populate:{
+
+        path:"user",
+
+        select:
+
+        "firstName lastName email phoneNumber"
+
+    }
+
+})
+
+.sort({
+
+    createdAt:-1
+
+});
 
     res.status(200).json({
       success: true,
@@ -38,8 +70,26 @@ export const getPainterRequest =
   asyncHandler(async (req, res) => {
     const request =
       await PainterRequest.findById(
-        req.params.id
-      );
+
+    req.params.id
+
+)
+
+.populate({
+
+    path:"selectedPainter",
+
+    populate:{
+
+        path:"user",
+
+        select:
+
+        "firstName lastName email phoneNumber"
+
+    }
+
+});
 
     if (!request) {
       return res.status(404).json({
@@ -161,3 +211,282 @@ export const respondToPainterRequest =
     });
 
   });
+
+  /*
+|--------------------------------------------------------------------------
+| MY REQUESTS
+|--------------------------------------------------------------------------
+*/
+
+export const getMyPainterRequests =
+asyncHandler(async(req,res)=>{
+
+    const painter =
+    await PainterProfile.findOne({
+
+        user:req.user._id
+
+    });
+
+    if(!painter){
+
+        return res.status(404).json({
+
+            success:false,
+
+            message:"Painter profile not found."
+
+        });
+
+    }
+
+    const requests =
+    await PainterRequest.find({
+
+        selectedPainter:painter._id
+
+    })
+
+    .sort({
+
+        createdAt:-1
+
+    });
+
+    return res.status(200).json({
+
+        success:true,
+
+        count:requests.length,
+
+        requests
+
+    });
+
+});
+/*
+|--------------------------------------------------------------------------
+| ACCEPT PAINTER REQUEST
+|--------------------------------------------------------------------------
+*/
+
+export const acceptPainterRequest =
+asyncHandler(async(req,res)=>{
+
+const painter=
+await PainterProfile.findOne({
+
+user:req.user._id
+
+});
+
+if(!painter){
+
+return res.status(404).json({
+
+success:false,
+
+message:"Painter profile not found."
+
+});
+
+}
+
+const request=
+await PainterRequest.findById(
+
+req.params.id
+
+);
+
+if(!request){
+
+return res.status(404).json({
+
+success:false,
+
+message:"Request not found."
+
+});
+
+}
+
+if(
+
+request.selectedPainter?.toString()!==
+
+painter._id.toString()
+
+){
+
+return res.status(403).json({
+
+success:false,
+
+message:"This request does not belong to you."
+
+});
+
+}
+
+if(request.status!=="pending"){
+
+return res.status(400).json({
+
+success:false,
+
+message:"This request has already been processed."
+
+});
+
+}
+
+request.status="accepted";
+
+await request.save();
+
+/*
+|--------------------------------------------------------------------------
+| CUSTOMER EMAIL
+|--------------------------------------------------------------------------
+*/
+
+// await sendPainterAcceptedEmail({
+// customerName:request.fullName,
+// email:request.email,
+// painterName:`${req.user.firstName} ${req.user.lastName}`,
+// });
+
+return res.status(200).json({
+
+success:true,
+
+message:"Request accepted successfully.",
+
+request,
+
+});
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| DECLINE PAINTER REQUEST
+|--------------------------------------------------------------------------
+*/
+
+export const declinePainterRequest =
+asyncHandler(async(req,res)=>{
+
+const painter=
+await PainterProfile.findOne({
+
+user:req.user._id
+
+});
+
+if(!painter){
+
+return res.status(404).json({
+
+success:false,
+
+message:"Painter profile not found."
+
+});
+
+}
+
+const request=
+await PainterRequest.findById(
+
+req.params.id
+
+);
+
+if(!request){
+
+return res.status(404).json({
+
+success:false,
+
+message:"Request not found."
+
+});
+
+}
+
+if(
+
+request.selectedPainter?.toString()!==
+
+painter._id.toString()
+
+){
+
+return res.status(403).json({
+
+success:false,
+
+message:"This request does not belong to you."
+
+});
+
+}
+
+if(request.status!=="pending"){
+
+return res.status(400).json({
+
+success:false,
+
+message:"This request has already been processed."
+
+});
+
+}
+
+const{
+
+reason
+
+}=req.body;
+
+request.status="declined";
+
+request.adminResponse=
+
+reason||
+
+"Painter declined this request.";
+
+request.responseDate=
+
+new Date();
+
+await request.save();
+
+/*
+|--------------------------------------------------------------------------
+| CUSTOMER EMAIL
+|--------------------------------------------------------------------------
+*/
+
+// await sendPainterDeclinedEmail({
+// customerName:request.fullName,
+// email:request.email,
+// painterName:`${req.user.firstName} ${req.user.lastName}`,
+// reason:request.adminResponse,
+// });
+
+return res.status(200).json({
+
+success:true,
+
+message:"Request declined successfully.",
+
+request,
+
+});
+
+});

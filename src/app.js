@@ -30,7 +30,7 @@ import siteSettingsRoutes from "./routes/siteSettings.routes.js";
 import masterDataRoutes from "./routes/masterData.routes.js";
 import painterRoutes from "./routes/painter.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
-
+import heroSliderRoutes from "./routes/heroSlider.routes.js";
 
 
 import notFoundMiddleware from "./middleware/notFound.middleware.js";
@@ -184,10 +184,13 @@ app.use(
 "/api/reviews",
 reviewRoutes
 );
+
 app.use(
   "/api/master-data",
   masterDataRoutes
 );
+
+app.use("/api/hero", heroSliderRoutes);
 
 app.use("/api/painters", painterRoutes);
 /*

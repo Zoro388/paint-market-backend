@@ -22,8 +22,10 @@ const router = express.Router();
 
 // Customer submits a review
 router.post(
-"/",
-createReview
+  "/",
+  protect,
+  authorize("customer"),
+  createReview
 );
 
 // Public reviews for a painter

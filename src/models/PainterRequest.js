@@ -63,6 +63,11 @@ const painterRequestSchema =
       responseDate: {
         type: Date,
       },
+
+      user: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User",
+},
       /*
 |--------------------------------------------------------------------------
 | SELECTED PAINTER

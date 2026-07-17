@@ -7,6 +7,7 @@ import {
   updatePainterStatus,
   respondToPainterRequest,
   getMyPainterRequests,
+    getMyBookings,
   acceptPainterRequest,
   declinePainterRequest,
 } from "../controllers/painterRequest.controller.js";
@@ -18,6 +19,8 @@ const router = express.Router();
 
 router.post(
   "/",
+  protect,
+  authorize("customer"),
   createPainterRequest
 );
 
@@ -39,6 +42,14 @@ authorize("painter"),
 getMyPainterRequests
 
 );
+
+router.get(
+  "/my-bookings",
+  protect,
+  authorize("customer"),
+  getMyBookings
+);
+
 
 router.patch(
 

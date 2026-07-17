@@ -44,12 +44,12 @@ export const createReview = asyncHandler(async (req, res) => {
 
   // Optional but highly recommended:
   // Only allow reviews after the job has reached the review stage.
-  if (request.status !== "reviewing") {
-    return res.status(400).json({
-      success: false,
-      message: "This booking is not yet available for review.",
-    });
-  }
+//   if (request.status !== "reviewing") {
+//     return res.status(400).json({
+//       success: false,
+//       message: "This booking is not yet available for review.",
+//     });
+//   }
 
   const existingReview = await Review.findOne({
     request: request._id,

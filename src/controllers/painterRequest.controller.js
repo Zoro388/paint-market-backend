@@ -4,33 +4,21 @@ import asyncHandler from "../utils/asyncHandler.js";
 import { sendPainterResponseEmail } from "../services/painterRequestEmail.service.js";
 import PainterProfile from "../models/PainterProfile.js";
 
-export const createPainterRequest =
-  asyncHandler(async (req, res) => {
-    const {
+export const createPainterRequest = asyncHandler(async (req, res) => {
+  const { selectedPainter, ...requestData } = req.body;
 
-    selectedPainter,
-
-    ...requestData
-
-} = req.body;
-
-const request =
-await PainterRequest.create({
-
+  const request = await PainterRequest.create({
     ...requestData,
-
-    selectedPainter:
-    selectedPainter || null,
-
-});
-
-    res.status(201).json({
-      success: true,
-      message:
-        "Painter request submitted successfully",
-      request,
-    });
+    user: req.user._id,
+    selectedPainter: selectedPainter || null,
   });
+
+  res.status(201).json({
+    success: true,
+    message: "Painter request submitted successfully",
+    request,
+  });
+});
 
 export const getPainterRequests =
   asyncHandler(async (req, res) => {
@@ -489,4 +477,33 @@ request,
 
 });
 
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| CUSTOMER - GET MY BOOKINGS
+|--------------------------------------------------------------------------
+*/
+
+export const getMyBookings = asyncHandler(async (req, res) => {
+  const requests = await PainterRequest.find({
+    user: req.user._id,
+  })
+    .populate({
+      path: "selectedPainter",
+      populate: {
+        path: "user",
+        select: "firstName lastName email",
+      },
+    })
+    .sort({
+      createdAt: -1,
+    });
+
+  return res.status(200).json({
+    success: true,
+    count: requests.length,
+    requests,
+  });
 });

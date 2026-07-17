@@ -4,203 +4,81 @@ import PainterProfile from "../models/PainterProfile.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import updatePainterRating from "../utils/updatePainterRating.js";
 
+
+
 /*
 |--------------------------------------------------------------------------
 | CREATE REVIEW
 |--------------------------------------------------------------------------
 */
 
-export const createReview =
-asyncHandler(async(req,res)=>{
-
-const{
-
-requestId,
-
-rating,
-
-review,
-
-}=req.body;
-
-if(
-
-!requestId||
-
-!rating||
-
-!review
-
-){
-
-return res.status(400).json({
-
-success:false,
-
-message:"All fields are required."
-
-});
-
-}
-
-const request=
-
-await PainterRequest.findById(
-
-requestId
-
-);
-
-if(!request){
-
-return res.status(404).json({
-
-success:false,
-
-message:"Request not found."
-
-});
-
-}
-
-if(!request.selectedPainter){
-
-return res.status(400).json({
-
-success:false,
-
-message:"No painter was assigned to this request."
-
-});
-
-}
-
-const existingReview=
-
-await Review.findOne({
-
-request:requestId,
-
-});
-
-if(existingReview){
-
-return res.status(400).json({
-
-success:false,
-
-message:"You have already reviewed this request."
-
-});
-
-}
-
-const reviewDoc=
-
-await Review.create({
-
-customerName:request.fullName,
-
-customerEmail:request.email,
-
-customerPhone:request.phoneNumber,
-
-painter:request.selectedPainter,
-
-request:request._id,
-
-rating,
-
-review,
-
-});
-
-/*
-|--------------------------------------------------------------------------
-| UPDATE PAINTER RATING
-|--------------------------------------------------------------------------
-*/
-
-await updatePainterRating(
-
-request.selectedPainter
-
-);
-
-return res.status(201).json({
-
-success:true,
-
-message:"Review submitted successfully.",
-
-review:reviewDoc,
-
-});
-
-});
-
-
-/*
-|--------------------------------------------------------------------------
-| GET REVIEWS FOR A PAINTER (PUBLIC)
-|--------------------------------------------------------------------------
-*/
-
-export const getPainterReviews =
-asyncHandler(async(req,res)=>{
-
-const painter=
-
-await PainterProfile.findById(
-
-req.params.id
-
-);
-
-if(!painter){
-
-return res.status(404).json({
-
-success:false,
-
-message:"Painter not found."
-
-});
-
-}
-
-const reviews=
-
-await Review.find({
-
-painter:req.params.id,
-
-isVisible:true,
-
-})
-
-.sort({
-
-createdAt:-1,
-
-});
-
-return res.status(200).json({
-
-success:true,
-
-averageRating:
-
-painter.averageRating,
-
-totalReviews:
-
-painter.totalReviews,
-
-reviews,
-
-});
-
+export const createReview = asyncHandler(async (req, res) => {
+  const { requestId, rating, review } = req.body;
+
+  if (!requestId || !rating || !review) {
+    return res.status(400).json({
+      success: false,
+      message: "All fields are required.",
+    });
+  }
+
+  // Logged in customer must own this request
+  const request = await PainterRequest.findOne({
+    _id: requestId,
+    user: req.user._id,
+  });
+
+  if (!request) {
+    return res.status(404).json({
+      success: false,
+      message: "Booking not found.",
+    });
+  }
+
+  if (!request.selectedPainter) {
+    return res.status(400).json({
+      success: false,
+      message: "No painter has been assigned to this booking.",
+    });
+  }
+
+  // Optional but highly recommended:
+  // Only allow reviews after the job has reached the review stage.
+  if (request.status !== "reviewing") {
+    return res.status(400).json({
+      success: false,
+      message: "This booking is not yet available for review.",
+    });
+  }
+
+  const existingReview = await Review.findOne({
+    request: request._id,
+  });
+
+  if (existingReview) {
+    return res.status(400).json({
+      success: false,
+      message: "You have already reviewed this booking.",
+    });
+  }
+
+  const reviewDoc = await Review.create({
+    customerName: request.fullName,
+    customerEmail: request.email,
+    customerPhone: request.phoneNumber,
+    painter: request.selectedPainter,
+    request: request._id,
+    rating,
+    review,
+  });
+
+  await updatePainterRating(request.selectedPainter);
+
+  return res.status(201).json({
+    success: true,
+    message: "Review submitted successfully.",
+    review: reviewDoc,
+  });
 });
 
 
@@ -429,4 +307,37 @@ message:"Review deleted successfully.",
 
 });
 
+});
+/*
+|--------------------------------------------------------------------------
+| GET REVIEWS FOR A PAINTER (PUBLIC)
+|--------------------------------------------------------------------------
+*/
+
+export const getPainterReviews = asyncHandler(async (req, res) => {
+  const reviews = await Review.find({
+    painter: req.params.id,
+    isVisible: true,
+  }).sort({
+    createdAt: -1,
+  });
+
+  const totalReviews = reviews.length;
+
+  const averageRating =
+    totalReviews === 0
+      ? 0
+      : reviews.reduce(
+          (sum, item) => sum + item.rating,
+          0
+        ) / totalReviews;
+
+  return res.status(200).json({
+    success: true,
+    averageRating: Number(
+      averageRating.toFixed(1)
+    ),
+    totalReviews,
+    reviews,
+  });
 });

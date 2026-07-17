@@ -1,6 +1,6 @@
 import HeroSlider from "../models/HeroSlider.js";
 import asyncHandler from "../utils/asyncHandler.js";
-import { uploadBuffer, deleteFile } from "../utils/cloudinary.js";
+import { uploadBuffer, deleteFile } from "../utils/cloudinaryUpload.js";
 
 /*
 |--------------------------------------------------------------------------

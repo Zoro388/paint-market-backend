@@ -1,34 +1,39 @@
 import Blog from "../models/Blog.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import slugify from "slugify";
+import { uploadBuffer } from "../utils/cloudinaryUpload.js";
 
-export const createBlog =
-asyncHandler(async (req, res) => {
+export const createBlog = asyncHandler(async (req, res) => {
   try {
 
-    const imageUrl =
-      req.file?.path;
-
-    if (!imageUrl) {
+    if (!req.file) {
       return res.status(400).json({
         success: false,
         message: "Featured image is required",
       });
     }
 
-    const blog =
-      await Blog.create({
-        title: req.body.title,
-        excerpt: req.body.excerpt,
-        content: req.body.content,
-        featuredImage: imageUrl,
-        tags: req.body.tags
-          ? JSON.parse(req.body.tags)
-          : [],
-        isFeatured:
-          req.body.isFeatured === "true",
-        author: req.user._id,
-      });
+    const uploadedImage = await uploadBuffer(
+      req.file,
+      "paint-market/blogs"
+    );
+
+    const blog = await Blog.create({
+      title: req.body.title,
+      slug: slugify(req.body.title, {
+        lower: true,
+        strict: true,
+      }),
+      excerpt: req.body.excerpt,
+      content: req.body.content,
+      featuredImage: uploadedImage.secure_url,
+      author: req.user._id,
+      tags: req.body.tags
+        ? JSON.parse(req.body.tags)
+        : [],
+      isFeatured:
+        req.body.isFeatured === "true",
+    });
 
     res.status(201).json({
       success: true,
@@ -37,12 +42,14 @@ asyncHandler(async (req, res) => {
     });
 
   } catch (error) {
+
     console.error("CREATE BLOG ERROR:", error);
 
     res.status(500).json({
       success: false,
       message: error.message,
     });
+
   }
 });
 

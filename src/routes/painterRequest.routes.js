@@ -14,13 +14,20 @@ import {
 
 import protect from "../middleware/auth.middleware.js";
 import authorize from "../middleware/role.middleware.js";
+import optionalProtect from "../middleware/optionalAuth.middleware.js";
 
 const router = express.Router();
 
+// router.post(
+//   "/",
+//   protect,
+//   authorize("customer"),
+//   createPainterRequest
+// );
+
 router.post(
   "/",
-  protect,
-  authorize("customer"),
+  optionalProtect,
   createPainterRequest
 );
 

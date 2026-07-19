@@ -8,10 +8,10 @@ export const createPainterRequest = asyncHandler(async (req, res) => {
   const { selectedPainter, ...requestData } = req.body;
 
   const request = await PainterRequest.create({
-    ...requestData,
-    user: req.user._id,
-    selectedPainter: selectedPainter || null,
-  });
+  ...requestData,
+  user: req.user?._id || null,
+  selectedPainter: selectedPainter || null,
+});
 
   res.status(201).json({
     success: true,
@@ -252,6 +252,7 @@ asyncHandler(async(req,res)=>{
     });
 
 });
+
 /*
 |--------------------------------------------------------------------------
 | ACCEPT PAINTER REQUEST

@@ -7,6 +7,7 @@ getMyReviews,
 getAllReviews,
 toggleReviewVisibility,
 deleteReview,
+getMyBookedPainters,
 } from "../controllers/review.controller.js";
 
 import protect from "../middleware/auth.middleware.js";
@@ -68,6 +69,19 @@ router.patch(
 protect,
 authorize("admin"),
 toggleReviewVisibility
+);
+
+/*
+|--------------------------------------------------------------------------
+| CUSTOMER
+|--------------------------------------------------------------------------
+*/
+
+router.get(
+  "/my-booked-painters",
+  protect,
+  authorize("customer"),
+  getMyBookedPainters
 );
 
 // Delete review

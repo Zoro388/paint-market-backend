@@ -341,3 +341,68 @@ export const getPainterReviews = asyncHandler(async (req, res) => {
     reviews,
   });
 });
+
+
+/*
+|--------------------------------------------------------------------------
+| GET MY BOOKED PAINTERS
+|--------------------------------------------------------------------------
+*/
+
+export const getMyBookedPainters = asyncHandler(async (req, res) => {
+
+  const requests = await PainterRequest.find({
+    user: req.user._id,
+    selectedPainter: { $ne: null },
+    status: "accepted",
+  })
+    .populate({
+      path: "selectedPainter",
+      populate: {
+        path: "user",
+        select: "firstName lastName email phoneNumber",
+      },
+    })
+    .sort({
+      createdAt: -1,
+    });
+
+  const painters = await Promise.all(
+
+    requests.map(async (request) => {
+
+      const review = await Review.findOne({
+        request: request._id,
+      });
+
+      return {
+
+        requestId: request._id,
+
+        bookingDate: request.createdAt,
+
+        status: request.status,
+
+        hasReviewed: !!review,
+
+        canReview: !review,
+
+        painter: request.selectedPainter,
+
+      };
+
+    })
+
+  );
+
+  return res.status(200).json({
+
+    success: true,
+
+    count: painters.length,
+
+    painters,
+
+  });
+
+});

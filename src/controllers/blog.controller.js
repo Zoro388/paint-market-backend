@@ -18,22 +18,26 @@ export const createBlog = asyncHandler(async (req, res) => {
       "paint-market/blogs"
     );
 
-    const blog = await Blog.create({
-      title: req.body.title,
-      slug: slugify(req.body.title, {
-        lower: true,
-        strict: true,
-      }),
-      excerpt: req.body.excerpt,
-      content: req.body.content,
-      featuredImage: uploadedImage.secure_url,
-      author: req.user._id,
-      tags: req.body.tags
-        ? JSON.parse(req.body.tags)
-        : [],
-      isFeatured:
-        req.body.isFeatured === "true",
-    });
+const blog = await Blog.create({
+  title: req.body.title,
+  slug: slugify(req.body.title, {
+    lower: true,
+    strict: true,
+  }),
+
+  // Accept either shortDescription or excerpt
+  excerpt:
+    req.body.shortDescription ||
+    req.body.excerpt,
+
+  content: req.body.content,
+  featuredImage: uploadedImage.secure_url,
+  author: req.user._id,
+  tags: req.body.tags
+    ? JSON.parse(req.body.tags)
+    : [],
+  isFeatured: req.body.isFeatured === "true",
+});
 
     res.status(201).json({
       success: true,
@@ -128,16 +132,20 @@ export const updateBlog =
         }
       );
     }
+if (req.body.shortDescription) {
+  req.body.excerpt = req.body.shortDescription;
+}
 
-    const updatedBlog =
-      await Blog.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        {
-          new: true,
-          runValidators: true,
-        }
-      );
+const updatedBlog =
+  await Blog.findByIdAndUpdate(
+    req.params.id,
+    req.body,
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+      
 
     res.status(200).json({
       success: true,

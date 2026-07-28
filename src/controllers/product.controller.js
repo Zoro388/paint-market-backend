@@ -1,362 +1,1128 @@
+// import Product from "../models/Product.js";
+// import asyncHandler from "../utils/asyncHandler.js";
+// import cloudinary from "../config/cloudinary.js";
+
+// export const createProduct =
+//   asyncHandler(async (req, res) => {
+
+//     if (
+//       !req.files ||
+//       req.files.length === 0
+//     ) {
+//       return res.status(400).json({
+//         success: false,
+//         message:
+//           "Please upload at least one product image",
+//       });
+//     }
+
+//     const uploadedImages = [];
+
+//     for (const file of req.files) {
+
+//       const result =
+//         await cloudinary.uploader.upload(
+//           `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+//           {
+//             folder:
+//               "paint-market/products",
+//           }
+//         );
+
+//       uploadedImages.push(
+//         result.secure_url
+//       );
+//     }
+
+//     let questions = [];
+
+//     if (req.body.questions) {
+//       questions = JSON.parse(
+//         req.body.questions
+//       );
+//     }
+
+//     let productFeatures = [];
+
+//     if (
+//       req.body.productFeatures
+//     ) {
+//       productFeatures =
+//         JSON.parse(
+//           req.body.productFeatures
+//         );
+//     }
+
+//     const product =
+//       await Product.create({
+
+//         productName:
+//           req.body.productName,
+
+//         productCategory:
+//           req.body.productCategory,
+
+//         productDescription:
+//           req.body.productDescription,
+
+//         colourCode:
+//           req.body.colourCode,
+
+//         colourName:
+//           req.body.colourName,
+
+//         hex:
+//           req.body.hex,
+
+//         price:
+//           Number(req.body.price),
+
+//         stockQuantity:
+//           Number(
+//             req.body.stockQuantity
+//           ),
+
+//         coverageInformation:
+//           req.body.coverageInformation,
+
+//         productFeatures,
+
+//         questions,
+
+//         status:
+//           req.body.status,
+
+//         productImages:
+//           uploadedImages,
+
+//       });
+
+//     res.status(201).json({
+//       success: true,
+//       message:
+//         "Product created successfully",
+//       product,
+//     });
+
+//   });
+
+// export const getProducts =
+//   asyncHandler(async (req, res) => {
+//     const products =
+//       await Product.find();
+
+//     res.status(200).json({
+//       success: true,
+//       count: products.length,
+//       products,
+//     });
+//   });
+
+// export const getProduct =
+//   asyncHandler(async (req, res) => {
+//     const product =
+//       await Product.findById(
+//         req.params.id
+//       );
+
+//     if (!product) {
+//       return res.status(404).json({
+//         success: false,
+//         message:
+//           "Product not found",
+//       });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       product,
+//     });
+//   });
+// export const updateProduct =
+//   asyncHandler(async (req, res) => {
+
+//     const product =
+//       await Product.findById(
+//         req.params.id
+//       );
+
+//     if (!product) {
+//       return res.status(404).json({
+//         success: false,
+//         message:
+//           "Product not found",
+//       });
+//     }
+
+//     let uploadedImages =
+//       product.productImages;
+
+//     // Upload new images only if provided
+//     if (
+//       req.files &&
+//       req.files.length > 0
+//     ) {
+
+//       uploadedImages = [];
+
+//       for (const file of req.files) {
+
+//         const result =
+//           await cloudinary.uploader.upload(
+//             `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+//             {
+//               folder:
+//                 "paint-market/products",
+//             }
+//           );
+
+//         uploadedImages.push(
+//           result.secure_url
+//         );
+//       }
+//     }
+
+//     let questions =
+//       product.questions;
+
+//     if (req.body.questions) {
+//       questions =
+//         JSON.parse(
+//           req.body.questions
+//         );
+//     }
+
+//     let productFeatures =
+//       product.productFeatures;
+
+//     if (
+//       req.body.productFeatures
+//     ) {
+//       productFeatures =
+//         JSON.parse(
+//           req.body.productFeatures
+//         );
+//     }
+
+//     product.productName =
+//       req.body.productName ??
+//       product.productName;
+
+//     product.productCategory =
+//       req.body.productCategory ??
+//       product.productCategory;
+
+//     product.productDescription =
+//       req.body.productDescription ??
+//       product.productDescription;
+
+//     product.colourCode =
+//       req.body.colourCode ??
+//       product.colourCode;
+
+//     product.colourName =
+//       req.body.colourName ??
+//       product.colourName;
+
+//     product.hex =
+//       req.body.hex ??
+//       product.hex;
+
+//     product.price =
+//       req.body.price ??
+//       product.price;
+
+//     product.stockQuantity =
+//       req.body.stockQuantity ??
+//       product.stockQuantity;
+
+//     product.coverageInformation =
+//       req.body.coverageInformation ??
+//       product.coverageInformation;
+
+//     product.status =
+//       req.body.status ??
+//       product.status;
+
+//     product.productImages =
+//       uploadedImages;
+
+//     product.productFeatures =
+//       productFeatures;
+
+//     product.questions =
+//       questions;
+
+//     await product.save();
+
+//     res.status(200).json({
+//       success: true,
+//       message:
+//         "Product updated successfully",
+//       product,
+//     });
+
+//   });
+// export const deleteProduct =
+//   asyncHandler(async (req, res) => {
+//     const product =
+//       await Product.findById(
+//         req.params.id
+//       );
+
+//     if (!product) {
+//       return res.status(404).json({
+//         success: false,
+//         message:
+//           "Product not found",
+//       });
+//     }
+
+//     await product.deleteOne();
+
+//     res.status(200).json({
+//       success: true,
+//       message:
+//         "Product deleted successfully",
+//     });
+//   });
+
+  
+//   export const increaseProductStock =
+//   asyncHandler(async (req, res) => {
+
+//     const { quantity } = req.body;
+
+//     if (!quantity || quantity <= 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Quantity must be greater than zero",
+//       });
+//     }
+
+//     const product = await Product.findById(req.params.id);
+
+//     if (!product) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Product not found",
+//       });
+//     }
+
+//     product.stockQuantity += Number(quantity);
+
+//     await product.save();
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Product stock increased successfully",
+//       product,
+//     });
+
+//   });
+
+//   export const decreaseProductStock =
+//   asyncHandler(async (req, res) => {
+
+//     const { quantity } = req.body;
+
+//     if (!quantity || quantity <= 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Quantity must be greater than zero",
+//       });
+//     }
+
+//     const product = await Product.findById(req.params.id);
+
+//     if (!product) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Product not found",
+//       });
+//     }
+
+//     if (product.stockQuantity < quantity) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Insufficient stock available",
+//       });
+//     }
+
+//     product.stockQuantity -= Number(quantity);
+
+//     await product.save();
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Product stock decreased successfully",
+//       product,
+//     });
+
+//   });
+
+
+
+
+
+
+
+
 import Product from "../models/Product.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import cloudinary from "../config/cloudinary.js";
 
+/*
+|--------------------------------------------------------------------------
+| Upload Image To Cloudinary
+|--------------------------------------------------------------------------
+*/
+
+const uploadImage = async (file) => {
+
+  const result =
+    await cloudinary.uploader.upload(
+      `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+      {
+        folder: "paint-market/products",
+      }
+    );
+
+  return {
+    url: result.secure_url,
+    publicId: result.public_id,
+  };
+
+};
+
+/*
+|--------------------------------------------------------------------------
+| CREATE PRODUCT
+|--------------------------------------------------------------------------
+*/
+
 export const createProduct =
-  asyncHandler(async (req, res) => {
+asyncHandler(async (req, res) => {
 
-    if (
-      !req.files ||
-      req.files.length === 0
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Please upload at least one product image",
-      });
-    }
+  if (!req.files || req.files.length === 0) {
 
-    const uploadedImages = [];
-
-    for (const file of req.files) {
-
-      const result =
-        await cloudinary.uploader.upload(
-          `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
-          {
-            folder:
-              "paint-market/products",
-          }
-        );
-
-      uploadedImages.push(
-        result.secure_url
-      );
-    }
-
-    let questions = [];
-
-    if (req.body.questions) {
-      questions = JSON.parse(
-        req.body.questions
-      );
-    }
-
-    let productFeatures = [];
-
-    if (
-      req.body.productFeatures
-    ) {
-      productFeatures =
-        JSON.parse(
-          req.body.productFeatures
-        );
-    }
-
-    const product =
-      await Product.create({
-
-        productName:
-          req.body.productName,
-
-        productCategory:
-          req.body.productCategory,
-
-        productDescription:
-          req.body.productDescription,
-
-        colourCode:
-          req.body.colourCode,
-
-        colourName:
-          req.body.colourName,
-
-        hex:
-          req.body.hex,
-
-        price:
-          Number(req.body.price),
-
-        stockQuantity:
-          Number(
-            req.body.stockQuantity
-          ),
-
-        coverageInformation:
-          req.body.coverageInformation,
-
-        productFeatures,
-
-        questions,
-
-        status:
-          req.body.status,
-
-        productImages:
-          uploadedImages,
-
-      });
-
-    res.status(201).json({
-      success: true,
+    return res.status(400).json({
+      success: false,
       message:
-        "Product created successfully",
-      product,
+        "Please upload the bucket image.",
     });
 
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Upload Bucket Image(s)
+  |--------------------------------------------------------------------------
+  */
+
+  const bucketImages = [];
+
+  const bucketImage =
+    await uploadImage(req.files[0]);
+
+  bucketImages.push(bucketImage.url);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Parse Questions
+  |--------------------------------------------------------------------------
+  */
+
+  let questions = [];
+
+  if (req.body.questions) {
+
+    questions = JSON.parse(
+      req.body.questions
+    );
+
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Parse Product Features
+  |--------------------------------------------------------------------------
+  */
+
+  let productFeatures = [];
+
+  if (req.body.productFeatures) {
+
+    productFeatures = JSON.parse(
+      req.body.productFeatures
+    );
+
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Parse Variants
+  |--------------------------------------------------------------------------
+  */
+
+  let variants = [];
+
+  if (req.body.variants) {
+
+    variants = JSON.parse(
+      req.body.variants
+    );
+
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Validate Variant Images
+  |--------------------------------------------------------------------------
+  */
+
+  if (
+    variants.length !==
+    req.files.length - 1
+  ) {
+
+    return res.status(400).json({
+
+      success: false,
+
+      message:
+        "Number of colour images must match the number of variants.",
+
+    });
+
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Upload Variant Images
+  |--------------------------------------------------------------------------
+  */
+
+  const uploadedVariants = [];
+
+  for (let i = 0; i < variants.length; i++) {
+
+    const uploadedImage =
+      await uploadImage(
+        req.files[i + 1]
+      );
+
+    uploadedVariants.push({
+
+      colourName:
+        variants[i].colourName,
+
+      colourCode:
+        variants[i].colourCode,
+
+      image: {
+
+        url:
+          uploadedImage.url,
+
+        publicId:
+          uploadedImage.publicId,
+
+      },
+
+    });
+
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Create Product
+  |--------------------------------------------------------------------------
+  */
+
+  const product =
+    await Product.create({
+
+      productName:
+        req.body.productName,
+
+      productCategory:
+        req.body.productCategory,
+
+      productDescription:
+        req.body.productDescription,
+
+      price:
+        Number(req.body.price),
+
+      coverageInformation:
+        req.body.coverageInformation,
+
+      productFeatures,
+
+      questions,
+
+      status:
+        req.body.status,
+
+      productImages:
+        bucketImages,
+
+      variants:
+        uploadedVariants,
+
+    });
+
+  res.status(201).json({
+
+    success: true,
+
+    message:
+      "Product created successfully",
+
+    product,
+
   });
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| GET ALL PRODUCTS
+|--------------------------------------------------------------------------
+*/
 
 export const getProducts =
-  asyncHandler(async (req, res) => {
-    const products =
-      await Product.find();
+asyncHandler(async (req, res) => {
 
-    res.status(200).json({
-      success: true,
-      count: products.length,
-      products,
+  const products =
+    await Product.find()
+    .sort({
+      createdAt: -1,
     });
+
+  res.status(200).json({
+
+    success: true,
+
+    count: products.length,
+
+    products,
+
   });
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| GET SINGLE PRODUCT
+|--------------------------------------------------------------------------
+*/
 
 export const getProduct =
-  asyncHandler(async (req, res) => {
-    const product =
-      await Product.findById(
-        req.params.id
-      );
+asyncHandler(async (req, res) => {
 
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message:
-          "Product not found",
-      });
-    }
+  const product =
+    await Product.findById(
+      req.params.id
+    );
 
-    res.status(200).json({
-      success: true,
-      product,
+  if (!product) {
+
+    return res.status(404).json({
+
+      success: false,
+
+      message:
+        "Product not found",
+
     });
-  });
-export const updateProduct =
-  asyncHandler(async (req, res) => {
 
-    const product =
-      await Product.findById(
-        req.params.id
+  }
+
+  res.status(200).json({
+
+    success: true,
+
+    product,
+
+  });
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| UPDATE PRODUCT
+|--------------------------------------------------------------------------
+*/
+
+export const updateProduct =
+asyncHandler(async (req, res) => {
+
+  const product =
+    await Product.findById(
+      req.params.id
+    );
+
+  if (!product) {
+
+    return res.status(404).json({
+
+      success: false,
+
+      message:
+        "Product not found",
+
+    });
+
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Bucket Images
+  |--------------------------------------------------------------------------
+  */
+
+  let bucketImages =
+    product.productImages;
+
+  if (req.files && req.files.length > 0) {
+
+    const uploadedBucket =
+      await uploadImage(
+        req.files[0]
       );
 
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message:
-          "Product not found",
-      });
-    }
+    bucketImages = [
+      uploadedBucket.url,
+    ];
 
-    let uploadedImages =
-      product.productImages;
+  }
 
-    // Upload new images only if provided
+  /*
+  |--------------------------------------------------------------------------
+  | Questions
+  |--------------------------------------------------------------------------
+  */
+
+  let questions =
+    product.questions;
+
+  if (req.body.questions) {
+
+    questions =
+      JSON.parse(
+        req.body.questions
+      );
+
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Product Features
+  |--------------------------------------------------------------------------
+  */
+
+  let productFeatures =
+    product.productFeatures;
+
+  if (req.body.productFeatures) {
+
+    productFeatures =
+      JSON.parse(
+        req.body.productFeatures
+      );
+
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Variants
+  |--------------------------------------------------------------------------
+  */
+
+  let uploadedVariants =
+    product.variants;
+
+  if (req.body.variants) {
+
+    const variants =
+      JSON.parse(
+        req.body.variants
+      );
+
     if (
       req.files &&
-      req.files.length > 0
+      variants.length ===
+      req.files.length - 1
     ) {
 
-      uploadedImages = [];
+      uploadedVariants = [];
 
-      for (const file of req.files) {
+      for (
+        let i = 0;
+        i < variants.length;
+        i++
+      ) {
 
-        const result =
-          await cloudinary.uploader.upload(
-            `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
-            {
-              folder:
-                "paint-market/products",
-            }
+        const image =
+          await uploadImage(
+            req.files[i + 1]
           );
 
-        uploadedImages.push(
-          result.secure_url
-        );
+        uploadedVariants.push({
+
+          colourName:
+            variants[i].colourName,
+
+          colourCode:
+            variants[i].colourCode,
+
+          image: {
+
+            url: image.url,
+
+            publicId:
+              image.publicId,
+
+          },
+
+        });
+
       }
+
     }
 
-    let questions =
-      product.questions;
+  }
 
-    if (req.body.questions) {
-      questions =
-        JSON.parse(
-          req.body.questions
-        );
-    }
+  /*
+  |--------------------------------------------------------------------------
+  | Update Fields
+  |--------------------------------------------------------------------------
+  */
 
-    let productFeatures =
-      product.productFeatures;
+  product.productName =
+    req.body.productName ??
+    product.productName;
 
-    if (
-      req.body.productFeatures
-    ) {
-      productFeatures =
-        JSON.parse(
-          req.body.productFeatures
-        );
-    }
+  product.productCategory =
+    req.body.productCategory ??
+    product.productCategory;
 
-    product.productName =
-      req.body.productName ??
-      product.productName;
+  product.productDescription =
+    req.body.productDescription ??
+    product.productDescription;
 
-    product.productCategory =
-      req.body.productCategory ??
-      product.productCategory;
+  product.price =
+    req.body.price ??
+    product.price;
 
-    product.productDescription =
-      req.body.productDescription ??
-      product.productDescription;
+  product.coverageInformation =
+    req.body.coverageInformation ??
+    product.coverageInformation;
 
-    product.colourCode =
-      req.body.colourCode ??
-      product.colourCode;
+  product.status =
+    req.body.status ??
+    product.status;
 
-    product.colourName =
-      req.body.colourName ??
-      product.colourName;
+  product.productImages =
+    bucketImages;
 
-    product.hex =
-      req.body.hex ??
-      product.hex;
+  product.productFeatures =
+    productFeatures;
 
-    product.price =
-      req.body.price ??
-      product.price;
+  product.questions =
+    questions;
 
-    product.stockQuantity =
-      req.body.stockQuantity ??
-      product.stockQuantity;
+  product.variants =
+    uploadedVariants;
 
-    product.coverageInformation =
-      req.body.coverageInformation ??
-      product.coverageInformation;
+  await product.save();
 
-    product.status =
-      req.body.status ??
-      product.status;
+  res.status(200).json({
 
-    product.productImages =
-      uploadedImages;
+    success: true,
 
-    product.productFeatures =
-      productFeatures;
+    message:
+      "Product updated successfully",
 
-    product.questions =
-      questions;
-
-    await product.save();
-
-    res.status(200).json({
-      success: true,
-      message:
-        "Product updated successfully",
-      product,
-    });
+    product,
 
   });
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| DELETE PRODUCT
+|--------------------------------------------------------------------------
+*/
+
 export const deleteProduct =
-  asyncHandler(async (req, res) => {
-    const product =
-      await Product.findById(
-        req.params.id
-      );
+asyncHandler(async (req, res) => {
 
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message:
-          "Product not found",
-      });
-    }
+  const product =
+    await Product.findById(
+      req.params.id
+    );
 
-    await product.deleteOne();
+  if (!product) {
 
-    res.status(200).json({
-      success: true,
+    return res.status(404).json({
+
+      success: false,
+
       message:
-        "Product deleted successfully",
+        "Product not found",
+
     });
+
+  }
+
+  await product.deleteOne();
+
+  res.status(200).json({
+
+    success: true,
+
+    message:
+      "Product deleted successfully",
+
   });
 
-  
-  export const increaseProductStock =
-  asyncHandler(async (req, res) => {
+});
 
-    const { quantity } = req.body;
 
-    if (!quantity || quantity <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Quantity must be greater than zero",
-      });
-    }
 
-    const product = await Product.findById(req.params.id);
+
+
+
+// VARIANT
+
+/*
+|--------------------------------------------------------------------------
+| ADD PRODUCT VARIANT
+|--------------------------------------------------------------------------
+*/
+
+export const addProductVariant =
+asyncHandler(async (req, res) => {
+
+    const product =
+    await Product.findById(
+        req.params.id
+    );
 
     if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
+
+        return res.status(404).json({
+            success:false,
+            message:"Product not found",
+        });
+
     }
 
-    product.stockQuantity += Number(quantity);
+    if (!req.file) {
+
+        return res.status(400).json({
+            success:false,
+            message:"Variant image is required.",
+        });
+
+    }
+
+    const uploaded =
+    await uploadImage(req.file);
+
+    product.variants.push({
+
+        colourName:
+        req.body.colourName,
+
+        colourCode:
+        req.body.colourCode,
+
+        image:{
+
+            url:uploaded.url,
+
+            publicId:
+            uploaded.publicId,
+
+        }
+
+    });
+
+    await product.save();
+
+    res.status(201).json({
+
+        success:true,
+
+        message:"Variant added successfully.",
+
+        product,
+
+    });
+
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| UPDATE PRODUCT VARIANT
+|--------------------------------------------------------------------------
+*/
+
+export const updateProductVariant =
+asyncHandler(async(req,res)=>{
+
+    const product=
+    await Product.findById(
+        req.params.id
+    );
+
+    if(!product){
+
+        return res.status(404).json({
+
+            success:false,
+
+            message:"Product not found.",
+
+        });
+
+    }
+
+    const variant=
+    product.variants.id(
+        req.params.variantId
+    );
+
+    if(!variant){
+
+        return res.status(404).json({
+
+            success:false,
+
+            message:"Variant not found.",
+
+        });
+
+    }
+
+    variant.colourName=
+    req.body.colourName ??
+    variant.colourName;
+
+    variant.colourCode=
+    req.body.colourCode ??
+    variant.colourCode;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Replace Image
+    |--------------------------------------------------------------------------
+    */
+
+    if(req.file){
+
+        await cloudinary.uploader.destroy(
+            variant.image.publicId
+        );
+
+        const uploaded=
+        await uploadImage(req.file);
+
+        variant.image={
+
+            url:uploaded.url,
+
+            publicId:
+            uploaded.publicId,
+
+        };
+
+    }
 
     await product.save();
 
     res.status(200).json({
-      success: true,
-      message: "Product stock increased successfully",
-      product,
+
+        success:true,
+
+        message:
+        "Variant updated successfully.",
+
+        product,
+
     });
 
-  });
+});
 
-  export const decreaseProductStock =
-  asyncHandler(async (req, res) => {
 
-    const { quantity } = req.body;
+/*
+|--------------------------------------------------------------------------
+| DELETE PRODUCT VARIANT
+|--------------------------------------------------------------------------
+*/
 
-    if (!quantity || quantity <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Quantity must be greater than zero",
-      });
+export const deleteProductVariant =
+asyncHandler(async(req,res)=>{
+
+    const product=
+    await Product.findById(
+        req.params.id
+    );
+
+    if(!product){
+
+        return res.status(404).json({
+
+            success:false,
+
+            message:"Product not found.",
+
+        });
+
     }
 
-    const product = await Product.findById(req.params.id);
+    const variant=
+    product.variants.id(
+        req.params.variantId
+    );
 
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
+    if(!variant){
+
+        return res.status(404).json({
+
+            success:false,
+
+            message:"Variant not found.",
+
+        });
+
     }
 
-    if (product.stockQuantity < quantity) {
-      return res.status(400).json({
-        success: false,
-        message: "Insufficient stock available",
-      });
-    }
+    await cloudinary.uploader.destroy(
+        variant.image.publicId
+    );
 
-    product.stockQuantity -= Number(quantity);
+    product.variants.pull(
+        req.params.variantId
+    );
 
     await product.save();
 
     res.status(200).json({
-      success: true,
-      message: "Product stock decreased successfully",
-      product,
+
+        success:true,
+
+        message:
+        "Variant deleted successfully.",
+
+        product,
+
     });
 
-  });
+});

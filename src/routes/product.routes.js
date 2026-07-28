@@ -10,8 +10,11 @@ import {
   getProduct,
   updateProduct,
   deleteProduct,
-  increaseProductStock,
-  decreaseProductStock,
+  // increaseProductStock,
+  // decreaseProductStock,
+  addProductVariant,
+updateProductVariant,
+deleteProductVariant,
 } from "../controllers/product.controller.js";
 
 const router = express.Router();
@@ -20,7 +23,7 @@ router.post(
   "/",
   protect,
   adminOnly,
-  upload.array("productImages", 5),
+  upload.array("productImages", 10),
   createProduct
 );
 
@@ -28,7 +31,7 @@ router.put(
   "/:id",
   protect,
   adminOnly,
-  upload.array("productImages", 5),
+  upload.array("productImages", 10),
   updateProduct
 );
 
@@ -43,19 +46,50 @@ router.get("/", getProducts);
 
 router.get("/:id", getProduct);
 
-router.patch(
-  "/:id/increase-stock",
-  protect,
-  adminOnly,
-  increaseProductStock
+
+
+/*
+|--------------------------------------------------------------------------
+| PRODUCT VARIANTS
+|--------------------------------------------------------------------------
+*/
+
+router.post(
+"/:id/variants",
+protect,
+adminOnly,
+upload.single("variantImage"),
+addProductVariant
 );
 
-router.patch(
-  "/:id/decrease-stock",
-  protect,
-  adminOnly,
-  decreaseProductStock
+router.put(
+"/:id/variants/:variantId",
+protect,
+adminOnly,
+upload.single("variantImage"),
+updateProductVariant
 );
+
+router.delete(
+"/:id/variants/:variantId",
+protect,
+adminOnly,
+deleteProductVariant
+);
+
+// router.patch(
+//   "/:id/increase-stock",
+//   protect,
+//   adminOnly,
+//   increaseProductStock
+// );
+
+// router.patch(
+//   "/:id/decrease-stock",
+//   protect,
+//   adminOnly,
+//   decreaseProductStock
+// );
 export default router;
 
 

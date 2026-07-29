@@ -1,17 +1,90 @@
 import PainterRequest from "../models/PainterRequest.js";
 import asyncHandler from "../utils/asyncHandler.js";
 // import {  sendPainterResponseEmail,} from "../services/painterRequestEmail.service.js";
-import { sendPainterResponseEmail } from "../services/painterRequestEmail.service.js";
+import { sendPainterRequestEmail } from "../services/painterRequestEmail.service.js";
+import { sendPainterRequestReceivedEmail } from "../services/painterRequestReceivedEmail.service.js";
+import { sendPainterAcceptedEmail } from "../services/painterAcceptedEmail.service.js";
+import { sendPainterDeclinedEmail } from "../services/painterDeclinedEmail.service.js";
 import PainterProfile from "../models/PainterProfile.js";
 
 export const createPainterRequest = asyncHandler(async (req, res) => {
   const { selectedPainter, ...requestData } = req.body;
 
-  const request = await PainterRequest.create({
+const request = await PainterRequest.create({
   ...requestData,
   user: req.user?._id || null,
   selectedPainter: selectedPainter || null,
 });
+
+const populatedRequest =
+await PainterRequest.findById(request._id)
+.populate({
+    path:"selectedPainter",
+    populate:{
+        path:"user",
+        select:"firstName lastName email phoneNumber"
+    }
+});
+
+try{
+
+    // Customer confirmation
+
+    await sendPainterRequestReceivedEmail({
+
+        customerName:
+        populatedRequest.fullName,
+
+        email:
+        populatedRequest.email,
+
+    });
+
+    // Painter notification
+
+    if(
+        populatedRequest.selectedPainter?.user?.email
+    ){
+
+        await sendPainterRequestEmail({
+
+            painterName:
+            `${populatedRequest.selectedPainter.user.firstName}
+            ${populatedRequest.selectedPainter.user.lastName}`,
+
+            email:
+            populatedRequest.selectedPainter.user.email,
+
+            customerName:
+            populatedRequest.fullName,
+
+            customerPhone:
+            populatedRequest.phoneNumber,
+
+            customerEmail:
+            populatedRequest.email,
+
+            propertyLocation:
+            populatedRequest.propertyLocation,
+
+            projectType:
+            populatedRequest.projectType,
+
+            preferredStartDate:
+            populatedRequest.preferredStartDate,
+
+        });
+
+    }
+
+}catch(error){
+
+    console.error(
+        "Painter request email error:",
+        error
+    );
+
+}
 
   res.status(201).json({
     success: true,
@@ -340,11 +413,39 @@ await request.save();
 |--------------------------------------------------------------------------
 */
 
-// await sendPainterAcceptedEmail({
-// customerName:request.fullName,
-// email:request.email,
-// painterName:`${req.user.firstName} ${req.user.lastName}`,
-// });
+try{
+
+await sendPainterAcceptedEmail({
+
+customerName:
+request.fullName,
+
+email:
+request.email,
+
+painterName:
+`${req.user.firstName}
+${req.user.lastName}`,
+
+painterPhone:
+req.user.phoneNumber,
+
+painterEmail:
+req.user.email,
+
+});
+
+}catch(error){
+
+console.error(
+
+"Accepted email error:",
+
+error
+
+);
+
+}
 
 return res.status(200).json({
 
@@ -461,12 +562,36 @@ await request.save();
 |--------------------------------------------------------------------------
 */
 
-// await sendPainterDeclinedEmail({
-// customerName:request.fullName,
-// email:request.email,
-// painterName:`${req.user.firstName} ${req.user.lastName}`,
-// reason:request.adminResponse,
-// });
+try{
+
+await sendPainterDeclinedEmail({
+
+customerName:
+request.fullName,
+
+email:
+request.email,
+
+painterName:
+`${req.user.firstName}
+${req.user.lastName}`,
+
+reason:
+request.adminResponse,
+
+});
+
+}catch(error){
+
+console.error(
+
+"Declined email error:",
+
+error
+
+);
+
+}
 
 return res.status(200).json({
 

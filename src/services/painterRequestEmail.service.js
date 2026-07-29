@@ -1,181 +1,182 @@
 import { sendEmail } from "./email.service.js";
 import { emailLayout } from "../templates/emailTemplate.js";
 
-export const sendPainterResponseEmail =
-  async ({
-    customerName,
-    email,
-    estimatedCost,
-    inspectionDate,
-    adminResponse,
-  }) => {
-    try {
-      const html = emailLayout({
-        title:
-          "Painter Request Update",
+export const sendPainterRequestEmail = async ({
+  painterName,
+  email,
+  customerName,
+  customerPhone,
+  customerEmail,
+  propertyLocation,
+  projectType,
+  propertyType,
+  preferredStartDate,
+  additionalNotes,
+}) => {
+  try {
+    const html = emailLayout({
+      title: "New Painting Request",
 
-        subtitle: `Hello ${customerName}, our team has reviewed your painter request and provided an update below.`,
+      subtitle: `Hello ${painterName}, you have received a new painting request from a customer.`,
 
-        content: `
-          <div
+      content: `
+        <div
+          style="
+            background:#F8F9FC;
+            border-left:4px solid #D4A017;
+            padding:20px;
+            border-radius:8px;
+            margin-top:20px;
+          "
+        >
+
+          <h3
             style="
-              background:#F8F9FC;
-              border-left:4px solid #D4A017;
-              padding:20px;
-              border-radius:8px;
-              margin-top:20px;
+              margin-top:0;
+              color:#0A2E63;
             "
           >
-            <h3
-              style="
-                margin-top:0;
-                color:#0A2E63;
-              "
-            >
-              Project Summary
-            </h3>
+            Customer Details
+          </h3>
 
-            <p
-              style="
-                color:#444;
-                line-height:1.8;
-              "
-            >
-              Thank you for choosing Paint Domain
-              for your painting project.
-            </p>
-
-            <p
-              style="
-                color:#444;
-                line-height:1.8;
-              "
-            >
-              Our team has carefully reviewed your
-              request and prepared the following
-              preliminary estimate.
-            </p>
-          </div>
-
-          <div
+          <table
             style="
-              background:#FFF8E8;
-              padding:25px;
-              border-radius:8px;
-              margin-top:20px;
-              text-align:center;
+              width:100%;
+              border-collapse:collapse;
+              margin-top:15px;
             "
           >
-            <div
-              style="
-                color:#777;
-                font-size:14px;
-              "
-            >
-              Estimated Cost
-            </div>
 
-            <div
-              style="
-                font-size:32px;
-                font-weight:bold;
-                color:#0A2E63;
-                margin-top:10px;
-              "
-            >
-              ₦${Number(
-                estimatedCost || 0
-              ).toLocaleString()}
-            </div>
-          </div>
+            <tr>
+              <td style="padding:8px 0;"><strong>Name</strong></td>
+              <td>${customerName}</td>
+            </tr>
 
-          <div
+            <tr>
+              <td style="padding:8px 0;"><strong>Phone</strong></td>
+              <td>${customerPhone}</td>
+            </tr>
+
+            <tr>
+              <td style="padding:8px 0;"><strong>Email</strong></td>
+              <td>${customerEmail}</td>
+            </tr>
+
+            <tr>
+              <td style="padding:8px 0;"><strong>Location</strong></td>
+              <td>${propertyLocation}</td>
+            </tr>
+
+            <tr>
+              <td style="padding:8px 0;"><strong>Project Type</strong></td>
+              <td>${projectType}</td>
+            </tr>
+
+            <tr>
+              <td style="padding:8px 0;"><strong>Property Type</strong></td>
+              <td>${propertyType || "Not specified"}</td>
+            </tr>
+
+            <tr>
+              <td style="padding:8px 0;"><strong>Preferred Start Date</strong></td>
+              <td>
+                ${
+                  preferredStartDate
+                    ? new Date(preferredStartDate).toDateString()
+                    : "Not specified"
+                }
+              </td>
+            </tr>
+
+          </table>
+
+        </div>
+
+        <div
+          style="
+            margin-top:20px;
+            background:#FFF8E8;
+            padding:20px;
+            border-radius:8px;
+          "
+        >
+
+          <strong
             style="
-              margin-top:20px;
-              background:#F8F9FC;
-              padding:20px;
-              border-radius:8px;
+              color:#0A2E63;
             "
           >
-            <strong
-              style="
-                color:#0A2E63;
-              "
-            >
-              Inspection Date
-            </strong>
+            Additional Notes
+          </strong>
 
-            <p
-              style="
-                margin-top:10px;
-                color:#555;
-              "
-            >
-              ${
-                inspectionDate
-                  ? new Date(
-                      inspectionDate
-                    ).toDateString()
-                  : "To Be Communicated"
-              }
-            </p>
-          </div>
-
-          <div
+          <p
             style="
-              margin-top:20px;
-              background:#F8F9FC;
-              padding:20px;
-              border-radius:8px;
+              margin-top:10px;
+              color:#555;
+              line-height:1.8;
             "
           >
-            <strong
-              style="
-                color:#0A2E63;
-              "
-            >
-              Message From Our Team
-            </strong>
+            ${
+              additionalNotes ||
+              "The customer did not provide any additional notes."
+            }
+          </p>
 
-            <p
-              style="
-                margin-top:10px;
-                color:#555;
-                line-height:1.8;
-              "
-            >
-              ${
-                adminResponse ||
-                "Our team will contact you shortly with further details."
-              }
-            </p>
-          </div>
-        `,
+        </div>
 
-        buttonText:
-          "Visit Paint Domain",
+        <div
+          style="
+            margin-top:20px;
+            background:#F8F9FC;
+            padding:20px;
+            border-radius:8px;
+          "
+        >
 
-        buttonLink:
-          process.env.FRONTEND_URL ||
-          "https://paintdomain.com",
-      });
+          <strong
+            style="
+              color:#0A2E63;
+            "
+          >
+            Next Step
+          </strong>
 
-      await sendEmail({
-        to: email,
+          <p
+            style="
+              margin-top:10px;
+              color:#555;
+              line-height:1.8;
+            "
+          >
+            Please log into your Paint Domain painter dashboard
+            to either <strong>Accept</strong> or
+            <strong>Decline</strong> this request.
+          </p>
 
-        subject:
-          "🎨 Update On Your Painter Request",
+        </div>
+      `,
 
-        html,
-      });
+      buttonText: "Open Painter Dashboard",
 
-      console.log(
-        `Painter response email sent to ${email}`
-      );
-    } catch (error) {
-      console.error(
-        "Painter response email error:",
-        error
-      );
-    }
-  };
+      buttonLink: `${process.env.FRONTEND_URL}/painter/dashboard`,
+    });
+
+    await sendEmail({
+      to: email,
+      subject: "🎨 New Customer Painting Request",
+      html,
+    });
+
+    console.log(
+      `Painter request notification email sent to ${email}`
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Painter request notification email error:",
+      error
+    );
+
+  }
+};

@@ -20,6 +20,38 @@ const questionSchema =
     }
   );
 
+const variantSchema =
+  new mongoose.Schema(
+    {
+      colourName: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+
+      colourCode: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+
+      image: {
+        url: {
+          type: String,
+          required: true,
+        },
+
+        publicId: {
+          type: String,
+          required: true,
+        },
+      },
+    },
+    {
+      _id: true,
+    }
+  );
+
 const productSchema =
   new mongoose.Schema(
     {
@@ -39,34 +71,32 @@ const productSchema =
         required: true,
       },
 
+      /*
+      |--------------------------------------------------------------------------
+      | Bucket Images
+      |--------------------------------------------------------------------------
+      */
+
       productImages: [
         {
           type: String,
         },
       ],
 
-      colourCode: {
-        type: String,
-      },
+      /*
+      |--------------------------------------------------------------------------
+      | Available Colour Variants
+      |--------------------------------------------------------------------------
+      */
 
-      colourName: {
-        type: String,
-      },
-
-      // NEW
-      hex: {
-        type: String,
-        default: "",
+      variants: {
+        type: [variantSchema],
+        default: [],
       },
 
       price: {
         type: Number,
         required: true,
-      },
-
-      stockQuantity: {
-        type: Number,
-        default: 0,
       },
 
       coverageInformation: {
@@ -79,7 +109,6 @@ const productSchema =
         },
       ],
 
-      // NEW
       questions: {
         type: [questionSchema],
         default: [],

@@ -404,32 +404,50 @@ const uploadImage = async (file) => {
 export const createProduct =
 asyncHandler(async (req, res) => {
 
+  console.log("========== CREATE PRODUCT ==========");
+
+  console.log("BODY:");
+  console.log(req.body);
+
+  console.log("FILES:");
+  console.log(
+    req.files?.map(file => ({
+      fieldname: file.fieldname,
+      originalname: file.originalname,
+    }))
+  );
+
+  /*
+  |--------------------------------------------------------------------------
+  | Validate Bucket Image
+  |--------------------------------------------------------------------------
+  */
+
   if (!req.files || req.files.length === 0) {
 
     return res.status(400).json({
       success: false,
-      message:
-        "Please upload the bucket image.",
+      message: "Please upload the bucket image.",
     });
 
   }
 
   /*
   |--------------------------------------------------------------------------
-  | Upload Bucket Image(s)
+  | Upload Bucket Image
   |--------------------------------------------------------------------------
   */
-
-  const bucketImages = [];
 
   const bucketImage =
     await uploadImage(req.files[0]);
 
-  bucketImages.push(bucketImage.url);
+  const bucketImages = [
+    bucketImage.url,
+  ];
 
   /*
   |--------------------------------------------------------------------------
-  | Parse Questions
+  | Questions
   |--------------------------------------------------------------------------
   */
 
@@ -437,15 +455,14 @@ asyncHandler(async (req, res) => {
 
   if (req.body.questions) {
 
-    questions = JSON.parse(
-      req.body.questions
-    );
+    questions =
+      JSON.parse(req.body.questions);
 
   }
 
   /*
   |--------------------------------------------------------------------------
-  | Parse Product Features
+  | Product Features
   |--------------------------------------------------------------------------
   */
 
@@ -453,84 +470,84 @@ asyncHandler(async (req, res) => {
 
   if (req.body.productFeatures) {
 
-    productFeatures = JSON.parse(
-      req.body.productFeatures
-    );
+    productFeatures =
+      JSON.parse(req.body.productFeatures);
 
   }
 
   /*
   |--------------------------------------------------------------------------
-  | Parse Variants
-  |--------------------------------------------------------------------------
-  */
-
-  let variants = [];
-
-  if (req.body.variants) {
-
-    variants = JSON.parse(
-      req.body.variants
-    );
-
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | Validate Variant Images
-  |--------------------------------------------------------------------------
-  */
-
-  if (
-    variants.length !==
-    req.files.length - 1
-  ) {
-
-    return res.status(400).json({
-
-      success: false,
-
-      message:
-        "Number of colour images must match the number of variants.",
-
-    });
-
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | Upload Variant Images
+  | Variants (Optional)
   |--------------------------------------------------------------------------
   */
 
   const uploadedVariants = [];
 
-  for (let i = 0; i < variants.length; i++) {
+  if (req.body.variants) {
 
-    const uploadedImage =
-      await uploadImage(
-        req.files[i + 1]
-      );
+    const variants =
+      JSON.parse(req.body.variants);
 
-    uploadedVariants.push({
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Variant Images
+    |--------------------------------------------------------------------------
+    */
 
-      colourName:
-        variants[i].colourName,
+    if (
+      req.files.length - 1 !==
+      variants.length
+    ) {
 
-      colourCode:
-        variants[i].colourCode,
+      return res.status(400).json({
 
-      image: {
+        success: false,
 
-        url:
-          uploadedImage.url,
+        message:
+          `Expected ${variants.length} colour image(s) but received ${req.files.length - 1}.`,
 
-        publicId:
-          uploadedImage.publicId,
+      });
 
-      },
+    }
 
-    });
+    /*
+    |--------------------------------------------------------------------------
+    | Upload Variant Images
+    |--------------------------------------------------------------------------
+    */
+
+    for (
+      let i = 0;
+      i < variants.length;
+      i++
+    ) {
+
+      const uploadedImage =
+        await uploadImage(
+          req.files[i + 1]
+        );
+
+      uploadedVariants.push({
+
+        colourName:
+          variants[i].colourName,
+
+        colourCode:
+          variants[i].colourCode,
+
+        image: {
+
+          url:
+            uploadedImage.url,
+
+          publicId:
+            uploadedImage.publicId,
+
+        },
+
+      });
+
+    }
 
   }
 
@@ -539,7 +556,22 @@ asyncHandler(async (req, res) => {
   | Create Product
   |--------------------------------------------------------------------------
   */
-
+console.log("========== PRODUCT TO CREATE ==========");
+console.dir(
+{
+  productName: req.body.productName,
+  productCategory: req.body.productCategory,
+  productDescription: req.body.productDescription,
+  price: Number(req.body.price),
+  coverageInformation: req.body.coverageInformation,
+  productFeatures,
+  questions,
+  status: req.body.status,
+  productImages: bucketImages,
+  variants: uploadedVariants,
+},
+{ depth: null }
+);
   const product =
     await Product.create({
 
@@ -573,12 +605,12 @@ asyncHandler(async (req, res) => {
 
     });
 
-  res.status(201).json({
+  return res.status(201).json({
 
     success: true,
 
     message:
-      "Product created successfully",
+      "Product created successfully.",
 
     product,
 
@@ -660,26 +692,20 @@ export const updateProduct =
 asyncHandler(async (req, res) => {
 
   const product =
-    await Product.findById(
-      req.params.id
-    );
+    await Product.findById(req.params.id);
 
   if (!product) {
 
     return res.status(404).json({
-
       success: false,
-
-      message:
-        "Product not found",
-
+      message: "Product not found",
     });
 
   }
 
   /*
   |--------------------------------------------------------------------------
-  | Bucket Images
+  | Bucket Image
   |--------------------------------------------------------------------------
   */
 
@@ -689,9 +715,7 @@ asyncHandler(async (req, res) => {
   if (req.files && req.files.length > 0) {
 
     const uploadedBucket =
-      await uploadImage(
-        req.files[0]
-      );
+      await uploadImage(req.files[0]);
 
     bucketImages = [
       uploadedBucket.url,
@@ -711,9 +735,7 @@ asyncHandler(async (req, res) => {
   if (req.body.questions) {
 
     questions =
-      JSON.parse(
-        req.body.questions
-      );
+      JSON.parse(req.body.questions);
 
   }
 
@@ -729,15 +751,13 @@ asyncHandler(async (req, res) => {
   if (req.body.productFeatures) {
 
     productFeatures =
-      JSON.parse(
-        req.body.productFeatures
-      );
+      JSON.parse(req.body.productFeatures);
 
   }
 
   /*
   |--------------------------------------------------------------------------
-  | Variants
+  | Variants (Optional)
   |--------------------------------------------------------------------------
   */
 
@@ -747,49 +767,56 @@ asyncHandler(async (req, res) => {
   if (req.body.variants) {
 
     const variants =
-      JSON.parse(
-        req.body.variants
-      );
+      JSON.parse(req.body.variants);
 
     if (
-      req.files &&
-      variants.length ===
-      req.files.length - 1
+      req.files.length - 1 !==
+      variants.length
     ) {
 
-      uploadedVariants = [];
+      return res.status(400).json({
 
-      for (
-        let i = 0;
-        i < variants.length;
-        i++
-      ) {
+        success: false,
 
-        const image =
-          await uploadImage(
-            req.files[i + 1]
-          );
+        message:
+          `Expected ${variants.length} colour image(s) but received ${req.files.length - 1}.`,
 
-        uploadedVariants.push({
+      });
 
-          colourName:
-            variants[i].colourName,
+    }
 
-          colourCode:
-            variants[i].colourCode,
+    uploadedVariants = [];
 
-          image: {
+    for (
+      let i = 0;
+      i < variants.length;
+      i++
+    ) {
 
-            url: image.url,
+      const uploadedImage =
+        await uploadImage(
+          req.files[i + 1]
+        );
 
-            publicId:
-              image.publicId,
+      uploadedVariants.push({
 
-          },
+        colourName:
+          variants[i].colourName,
 
-        });
+        colourCode:
+          variants[i].colourCode,
 
-      }
+        image: {
+
+          url:
+            uploadedImage.url,
+
+          publicId:
+            uploadedImage.publicId,
+
+        },
+
+      });
 
     }
 
@@ -797,7 +824,7 @@ asyncHandler(async (req, res) => {
 
   /*
   |--------------------------------------------------------------------------
-  | Update Fields
+  | Update Product
   |--------------------------------------------------------------------------
   */
 
@@ -839,12 +866,12 @@ asyncHandler(async (req, res) => {
 
   await product.save();
 
-  res.status(200).json({
+  return res.status(200).json({
 
     success: true,
 
     message:
-      "Product updated successfully",
+      "Product updated successfully.",
 
     product,
 
@@ -905,19 +932,23 @@ asyncHandler(async (req, res) => {
 |--------------------------------------------------------------------------
 */
 
+/*
+|--------------------------------------------------------------------------
+| ADD PRODUCT VARIANT
+|--------------------------------------------------------------------------
+*/
+
 export const addProductVariant =
 asyncHandler(async (req, res) => {
 
     const product =
-    await Product.findById(
-        req.params.id
-    );
+    await Product.findById(req.params.id);
 
     if (!product) {
 
         return res.status(404).json({
-            success:false,
-            message:"Product not found",
+            success: false,
+            message: "Product not found",
         });
 
     }
@@ -925,8 +956,8 @@ asyncHandler(async (req, res) => {
     if (!req.file) {
 
         return res.status(400).json({
-            success:false,
-            message:"Variant image is required.",
+            success: false,
+            message: "Variant image is required.",
         });
 
     }
@@ -934,32 +965,53 @@ asyncHandler(async (req, res) => {
     const uploaded =
     await uploadImage(req.file);
 
+    /*
+    |--------------------------------------------------------------------------
+    | Ensure variants array exists
+    |--------------------------------------------------------------------------
+    */
+
+    if (!Array.isArray(product.variants)) {
+
+        product.variants = [];
+
+    }
+
     product.variants.push({
 
         colourName:
-        req.body.colourName,
+            req.body.colourName,
 
         colourCode:
-        req.body.colourCode,
+            req.body.colourCode,
 
-        image:{
+        image: {
 
-            url:uploaded.url,
+            url:
+                uploaded.url,
 
             publicId:
-            uploaded.publicId,
+                uploaded.publicId,
 
-        }
+        },
 
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tell Mongoose the array changed
+    |--------------------------------------------------------------------------
+    */
+
+    product.markModified("variants");
 
     await product.save();
 
     res.status(201).json({
 
-        success:true,
+        success: true,
 
-        message:"Variant added successfully.",
+        message: "Variant added successfully.",
 
         product,
 

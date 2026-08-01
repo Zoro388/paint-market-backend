@@ -24,6 +24,8 @@ import {
 getPainterDashboard,
 getPublicPainters,
 getPublicPainterById,
+// getAllPainters,
+togglePainterStatus,
 
 }
 from "../controllers/painter.controller.js";
@@ -103,6 +105,20 @@ authorize("admin"),
 
 getApprovedPainters
 
+);
+
+// router.get(
+//     "/all",
+//     protect,
+//     authorize("admin"),
+//     getAllPainters
+// );
+
+router.patch(
+    "/:id/status",
+    protect,
+    authorize("admin"),
+    togglePainterStatus
 );
 
 /*

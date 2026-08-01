@@ -1665,3 +1665,64 @@ reviews,
 });
 
 });
+
+
+// export const getAllPainters =
+// asyncHandler(async (req, res) => {
+
+//     const painters =
+//     await Painter.find()
+//     .sort({ createdAt: -1 });
+
+//     res.status(200).json({
+
+//         success: true,
+
+//         count: painters.length,
+
+//         painters,
+
+//     });
+
+// });
+
+export const togglePainterStatus =
+asyncHandler(async (req, res) => {
+
+    const painter =
+    await Painter.findById(req.params.id);
+
+    if (!painter) {
+
+        return res.status(404).json({
+
+            success: false,
+
+            message: "Painter not found.",
+
+        });
+
+    }
+
+    painter.status =
+
+    painter.status === "active"
+
+    ? "inactive"
+
+    : "active";
+
+    await painter.save();
+
+    res.status(200).json({
+
+        success: true,
+
+        message:
+        `Painter ${painter.status}.`,
+
+        painter,
+
+    });
+
+});

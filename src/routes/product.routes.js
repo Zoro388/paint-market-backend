@@ -23,7 +23,7 @@ router.post(
   "/",
   protect,
   adminOnly,
-  upload.array("productImages", 10),
+  upload.array("productImages", 30),
   createProduct
 );
 

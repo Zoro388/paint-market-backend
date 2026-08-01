@@ -687,7 +687,6 @@ asyncHandler(async (req, res) => {
 | UPDATE PRODUCT
 |--------------------------------------------------------------------------
 */
-
 export const updateProduct =
 asyncHandler(async (req, res) => {
 
@@ -769,54 +768,83 @@ asyncHandler(async (req, res) => {
     const variants =
       JSON.parse(req.body.variants);
 
-    if (
-      req.files.length - 1 !==
-      variants.length
-    ) {
+    /*
+    |--------------------------------------------------------------------------
+    | No variant images uploaded
+    |--------------------------------------------------------------------------
+    */
 
-      return res.status(400).json({
+    if (!req.files || req.files.length <= 1) {
 
-        success: false,
+      uploadedVariants =
+        variants.map((variant, index) => ({
 
-        message:
-          `Expected ${variants.length} colour image(s) but received ${req.files.length - 1}.`,
+          colourName:
+            variant.colourName,
 
-      });
+          colourCode:
+            variant.colourCode,
+
+          image:
+            product.variants[index]?.image ||
+            null,
+
+        }));
 
     }
 
-    uploadedVariants = [];
+    /*
+    |--------------------------------------------------------------------------
+    | Variant images uploaded
+    |--------------------------------------------------------------------------
+    */
 
-    for (
-      let i = 0;
-      i < variants.length;
-      i++
-    ) {
+    else {
 
-      const uploadedImage =
-        await uploadImage(
-          req.files[i + 1]
-        );
+      uploadedVariants = [];
 
-      uploadedVariants.push({
+      for (
+        let i = 0;
+        i < variants.length;
+        i++
+      ) {
 
-        colourName:
-          variants[i].colourName,
+        let image =
+          product.variants[i]?.image ||
+          null;
 
-        colourCode:
-          variants[i].colourCode,
+        if (req.files[i + 1]) {
 
-        image: {
+          const uploadedImage =
+            await uploadImage(
+              req.files[i + 1]
+            );
 
-          url:
-            uploadedImage.url,
+          image = {
 
-          publicId:
-            uploadedImage.publicId,
+            url:
+              uploadedImage.url,
 
-        },
+            publicId:
+              uploadedImage.publicId,
 
-      });
+          };
+
+        }
+
+        uploadedVariants.push({
+
+          colourName:
+            variants[i].colourName,
+
+          colourCode:
+            variants[i].colourCode,
+
+          image,
+
+        });
+
+      }
 
     }
 
@@ -878,7 +906,6 @@ asyncHandler(async (req, res) => {
   });
 
 });
-
 /*
 |--------------------------------------------------------------------------
 | DELETE PRODUCT

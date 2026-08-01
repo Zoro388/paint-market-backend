@@ -690,483 +690,332 @@ asyncHandler(async (req, res) => {
 export const updateProduct =
 asyncHandler(async (req, res) => {
 
-  const product =
-    await Product.findById(req.params.id);
-
-  if (!product) {
-
-    return res.status(404).json({
-      success: false,
-      message: "Product not found",
-    });
-
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | Parse Questions
-  |--------------------------------------------------------------------------
-  */
-
-  let questions = product.questions;
-
-  if (req.body.questions) {
-
-    questions = JSON.parse(req.body.questions);
-
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | Parse Product Features
-  |--------------------------------------------------------------------------
-  */
-
-  let productFeatures = product.productFeatures;
-
-  if (req.body.productFeatures) {
-
-    productFeatures = JSON.parse(
-      req.body.productFeatures
-    );
-
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | Parse Variants
-  |--------------------------------------------------------------------------
-  */
-
-  let variants = product.variants;
-
-  if (req.body.variants) {
-
-    variants = JSON.parse(req.body.variants);
-
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | Files
-  |--------------------------------------------------------------------------
-  */
-
-  const files = req.files || [];
-
-  /*
-  |--------------------------------------------------------------------------
-  | Bucket Image
-  |--------------------------------------------------------------------------
-  */
-
-  let bucketImages = product.productImages;
-
-  if (files.length > 0) {
-
-    const bucketUpload =
-      await uploadImage(files[0]);
-
-    bucketImages = [
-      bucketUpload.url,
-    ];
-
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | Variant Images
-  |--------------------------------------------------------------------------
-  */
-
-  let uploadedVariants = product.variants;
-
-  const uploadedVariantFiles =
-    files.slice(1);
-
-  if (req.body.variants) {
-
-    /*
-    |--------------------------------------------------------------------------
-    | Admin uploaded ALL variant images
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-      uploadedVariantFiles.length > 0
-    ) {
-
-      if (
-        uploadedVariantFiles.length !==
-        variants.length
-      ) {
-
-        return res.status(400).json({
-
-          success: false,
-
-          message:
-            `You uploaded ${uploadedVariantFiles.length} colour image(s) but there are ${variants.length} variants. Please upload all variant images.`,
-
-        });
-
-      }
-
-      uploadedVariants = [];
-
-      for (
-        let i = 0;
-        i < variants.length;
-        i++
-      ) {
-
-        const uploaded =
-          await uploadImage(
-            uploadedVariantFiles[i]
-          );
-
-        uploadedVariants.push({
-
-          colourName:
-            variants[i].colourName,
-
-          colourCode:
-            variants[i].colourCode,
-
-          image: {
-
-            url: uploaded.url,
-
-            publicId:
-              uploaded.publicId,
-
-          },
-
-        });
-
-      }
-
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | No variant images uploaded
-    |--------------------------------------------------------------------------
-    */
-
-    else {
-
-      uploadedVariants =
-        variants.map(
-          (variant, index) => ({
-
-            colourName:
-              variant.colourName,
-
-            colourCode:
-              variant.colourCode,
-
-            image:
-              product.variants[index]
-                ?.image,
-
-          })
-        );
-
-    }
-
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | Update Product
-  |--------------------------------------------------------------------------
-  */
-
-  product.productName =
-    req.body.productName ??
-    product.productName;
-
-  product.productCategory =
-    req.body.productCategory ??
-    product.productCategory;
-
-  product.productDescription =
-    req.body.productDescription ??
-    product.productDescription;
-
-  product.price =
-    req.body.price ??
-    product.price;
-
-  product.coverageInformation =
-    req.body.coverageInformation ??
-    product.coverageInformation;
-
-  product.status =
-    req.body.status ??
-    product.status;
-
-  product.productImages =
-    bucketImages;
-
-  product.productFeatures =
-    productFeatures;
-
-  product.questions =
-    questions;
-
-  product.variants =
-    uploadedVariants;
-
-  await product.save();
-
-  res.status(200).json({
-
-    success: true,
-
-    message:
-      "Product updated successfully.",
-
-    product,
-
-  });
-
-});
-/*
-|--------------------------------------------------------------------------
-| DELETE PRODUCT
-|--------------------------------------------------------------------------
-*/
-
-export const deleteProduct =
-asyncHandler(async (req, res) => {
-
-  const product =
-    await Product.findById(
-      req.params.id
-    );
-
-  if (!product) {
-
-    return res.status(404).json({
-
-      success: false,
-
-      message:
-        "Product not found",
-
-    });
-
-  }
-
-  await product.deleteOne();
-
-  res.status(200).json({
-
-    success: true,
-
-    message:
-      "Product deleted successfully",
-
-  });
-
-});
-
-
-
-
-
-
-// VARIANT
-
-/*
-|--------------------------------------------------------------------------
-| ADD PRODUCT VARIANT
-|--------------------------------------------------------------------------
-*/
-
-/*
-|--------------------------------------------------------------------------
-| ADD PRODUCT VARIANT
-|--------------------------------------------------------------------------
-*/
-
-export const addProductVariant =
-asyncHandler(async (req, res) => {
-
     const product =
     await Product.findById(req.params.id);
 
     if (!product) {
 
         return res.status(404).json({
+
             success: false,
+
             message: "Product not found",
+
         });
 
     }
-
-    if (!req.file) {
-
-        return res.status(400).json({
-            success: false,
-            message: "Variant image is required.",
-        });
-
-    }
-
-    const uploaded =
-    await uploadImage(req.file);
 
     /*
     |--------------------------------------------------------------------------
-    | Ensure variants array exists
+    | Parse Questions
     |--------------------------------------------------------------------------
     */
 
-    if (!Array.isArray(product.variants)) {
+    let questions = product.questions;
 
-        product.variants = [];
+    if (req.body.questions) {
+
+        questions = JSON.parse(req.body.questions);
 
     }
 
-    product.variants.push({
+    /*
+    |--------------------------------------------------------------------------
+    | Parse Product Features
+    |--------------------------------------------------------------------------
+    */
 
-        colourName:
-            req.body.colourName,
+    let productFeatures = product.productFeatures;
 
-        colourCode:
-            req.body.colourCode,
+    if (req.body.productFeatures) {
 
-        image: {
+        productFeatures = JSON.parse(req.body.productFeatures);
 
-            url:
-                uploaded.url,
+    }
 
-            publicId:
+    /*
+    |--------------------------------------------------------------------------
+    | Parse Variants
+    |--------------------------------------------------------------------------
+    */
+
+    let variants = product.variants;
+
+    if (req.body.variants) {
+
+        variants = JSON.parse(req.body.variants);
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Separate Uploaded Files
+    |--------------------------------------------------------------------------
+    */
+
+    const files = req.files || [];
+
+    let bucketImageFile = null;
+
+    const variantFiles = {};
+
+    for (const file of files) {
+
+        if (file.fieldname === "productImages") {
+
+            bucketImageFile = file;
+
+        }
+
+        else if (
+
+            file.fieldname.startsWith(
+
+                "variantImage_"
+
+            )
+
+        ) {
+
+            const key = file.fieldname.replace(
+
+                "variantImage_",
+
+                ""
+
+            );
+
+            variantFiles[key] = file;
+
+        }
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bucket Image
+    |--------------------------------------------------------------------------
+    */
+
+    let bucketImages = product.productImages;
+
+    if (bucketImageFile) {
+
+        const uploadedBucket =
+
+        await uploadImage(bucketImageFile);
+
+        bucketImages = [
+
+            uploadedBucket.url,
+
+        ];
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Variants
+    |--------------------------------------------------------------------------
+    */
+
+    const uploadedVariants = [];
+
+    for (
+
+        let index = 0;
+
+        index < variants.length;
+
+        index++
+
+    ) {
+
+        const variant = variants[index];
+
+        let image = null;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Existing Variant
+        |--------------------------------------------------------------------------
+        */
+
+        if (variant._id) {
+
+            const existing =
+
+            product.variants.id(
+
+                variant._id
+
+            );
+
+            if (existing) {
+
+                image = existing.image;
+
+            }
+
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Existing Variant Image Updated
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+
+            variant._id &&
+
+            variantFiles[variant._id]
+
+        ) {
+
+            const uploaded =
+
+            await uploadImage(
+
+                variantFiles[variant._id]
+
+            );
+
+            image = {
+
+                url: uploaded.url,
+
+                publicId:
+
                 uploaded.publicId,
 
-        },
+            };
 
-    });
+        }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Tell Mongoose the array changed
-    |--------------------------------------------------------------------------
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | New Variant
+        |--------------------------------------------------------------------------
+        */
 
-    product.markModified("variants");
+        if (
 
-    await product.save();
+            !variant._id &&
 
-    res.status(201).json({
+            variantFiles[`new_${index}`]
 
-        success: true,
+        ) {
 
-        message: "Variant added successfully.",
+            const uploaded =
 
-        product,
+            await uploadImage(
 
-    });
+                variantFiles[`new_${index}`]
 
-});
+            );
 
+            image = {
 
-/*
-|--------------------------------------------------------------------------
-| UPDATE PRODUCT VARIANT
-|--------------------------------------------------------------------------
-*/
+                url: uploaded.url,
 
-export const updateProductVariant =
-asyncHandler(async(req,res)=>{
+                publicId:
 
-    const product=
-    await Product.findById(
-        req.params.id
-    );
+                uploaded.publicId,
 
-    if(!product){
+            };
 
-        return res.status(404).json({
+        }
 
-            success:false,
+        uploadedVariants.push({
 
-            message:"Product not found.",
+            colourName:
 
-        });
+            variant.colourName,
 
-    }
+            colourCode:
 
-    const variant=
-    product.variants.id(
-        req.params.variantId
-    );
+            variant.colourCode,
 
-    if(!variant){
-
-        return res.status(404).json({
-
-            success:false,
-
-            message:"Variant not found.",
+            image,
 
         });
 
     }
 
-    variant.colourName=
-    req.body.colourName ??
-    variant.colourName;
-
-    variant.colourCode=
-    req.body.colourCode ??
-    variant.colourCode;
-
     /*
     |--------------------------------------------------------------------------
-    | Replace Image
+    | Update Product
     |--------------------------------------------------------------------------
     */
 
-    if(req.file){
+    product.productName =
 
-        await cloudinary.uploader.destroy(
-            variant.image.publicId
-        );
+    req.body.productName ??
 
-        const uploaded=
-        await uploadImage(req.file);
+    product.productName;
 
-        variant.image={
+    product.productCategory =
 
-            url:uploaded.url,
+    req.body.productCategory ??
 
-            publicId:
-            uploaded.publicId,
+    product.productCategory;
 
-        };
+    product.productDescription =
 
-    }
+    req.body.productDescription ??
+
+    product.productDescription;
+
+    product.price =
+
+    req.body.price ??
+
+    product.price;
+
+    product.coverageInformation =
+
+    req.body.coverageInformation ??
+
+    product.coverageInformation;
+
+    product.status =
+
+    req.body.status ??
+
+    product.status;
+
+    product.productImages =
+
+    bucketImages;
+
+    product.productFeatures =
+
+    productFeatures;
+
+    product.questions =
+
+    questions;
+
+    product.variants =
+
+    uploadedVariants;
 
     await product.save();
 
     res.status(200).json({
 
-        success:true,
+        success: true,
 
         message:
-        "Variant updated successfully.",
+
+        "Product updated successfully.",
 
         product,
 
     });
 
 });
-
-
 /*
 |--------------------------------------------------------------------------
 | DELETE PRODUCT VARIANT

@@ -31,7 +31,7 @@ router.put(
   "/:id",
   protect,
   adminOnly,
-  upload.array("productImages", 10),
+  upload.any(),
   updateProduct
 );
 

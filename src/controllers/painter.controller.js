@@ -478,7 +478,7 @@ asyncHandler(async (req, res) => {
 
         approvalStatus: "approved",
 
-        status: "active",
+        // status: "active",
 
     })
 

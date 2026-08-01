@@ -704,102 +704,113 @@ asyncHandler(async (req, res) => {
 
   /*
   |--------------------------------------------------------------------------
+  | Parse Questions
+  |--------------------------------------------------------------------------
+  */
+
+  let questions = product.questions;
+
+  if (req.body.questions) {
+
+    questions = JSON.parse(req.body.questions);
+
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Parse Product Features
+  |--------------------------------------------------------------------------
+  */
+
+  let productFeatures = product.productFeatures;
+
+  if (req.body.productFeatures) {
+
+    productFeatures = JSON.parse(
+      req.body.productFeatures
+    );
+
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Parse Variants
+  |--------------------------------------------------------------------------
+  */
+
+  let variants = product.variants;
+
+  if (req.body.variants) {
+
+    variants = JSON.parse(req.body.variants);
+
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Files
+  |--------------------------------------------------------------------------
+  */
+
+  const files = req.files || [];
+
+  /*
+  |--------------------------------------------------------------------------
   | Bucket Image
   |--------------------------------------------------------------------------
   */
 
-  let bucketImages =
-    product.productImages;
+  let bucketImages = product.productImages;
 
-  if (req.files && req.files.length > 0) {
+  if (files.length > 0) {
 
-    const uploadedBucket =
-      await uploadImage(req.files[0]);
+    const bucketUpload =
+      await uploadImage(files[0]);
 
     bucketImages = [
-      uploadedBucket.url,
+      bucketUpload.url,
     ];
 
   }
 
   /*
   |--------------------------------------------------------------------------
-  | Questions
+  | Variant Images
   |--------------------------------------------------------------------------
   */
 
-  let questions =
-    product.questions;
+  let uploadedVariants = product.variants;
 
-  if (req.body.questions) {
-
-    questions =
-      JSON.parse(req.body.questions);
-
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | Product Features
-  |--------------------------------------------------------------------------
-  */
-
-  let productFeatures =
-    product.productFeatures;
-
-  if (req.body.productFeatures) {
-
-    productFeatures =
-      JSON.parse(req.body.productFeatures);
-
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | Variants (Optional)
-  |--------------------------------------------------------------------------
-  */
-
-  let uploadedVariants =
-    product.variants;
+  const uploadedVariantFiles =
+    files.slice(1);
 
   if (req.body.variants) {
 
-    const variants =
-      JSON.parse(req.body.variants);
-
     /*
     |--------------------------------------------------------------------------
-    | No variant images uploaded
+    | Admin uploaded ALL variant images
     |--------------------------------------------------------------------------
     */
 
-    if (!req.files || req.files.length <= 1) {
+    if (
+      uploadedVariantFiles.length > 0
+    ) {
 
-      uploadedVariants =
-        variants.map((variant, index) => ({
+      if (
+        uploadedVariantFiles.length !==
+        variants.length
+      ) {
 
-          colourName:
-            variant.colourName,
+        return res.status(400).json({
 
-          colourCode:
-            variant.colourCode,
+          success: false,
 
-          image:
-            product.variants[index]?.image ||
-            null,
+          message:
+            `You uploaded ${uploadedVariantFiles.length} colour image(s) but there are ${variants.length} variants. Please upload all variant images.`,
 
-        }));
+        });
 
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Variant images uploaded
-    |--------------------------------------------------------------------------
-    */
-
-    else {
+      }
 
       uploadedVariants = [];
 
@@ -809,28 +820,10 @@ asyncHandler(async (req, res) => {
         i++
       ) {
 
-        let image =
-          product.variants[i]?.image ||
-          null;
-
-        if (req.files[i + 1]) {
-
-          const uploadedImage =
-            await uploadImage(
-              req.files[i + 1]
-            );
-
-          image = {
-
-            url:
-              uploadedImage.url,
-
-            publicId:
-              uploadedImage.publicId,
-
-          };
-
-        }
+        const uploaded =
+          await uploadImage(
+            uploadedVariantFiles[i]
+          );
 
         uploadedVariants.push({
 
@@ -840,11 +833,45 @@ asyncHandler(async (req, res) => {
           colourCode:
             variants[i].colourCode,
 
-          image,
+          image: {
+
+            url: uploaded.url,
+
+            publicId:
+              uploaded.publicId,
+
+          },
 
         });
 
       }
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | No variant images uploaded
+    |--------------------------------------------------------------------------
+    */
+
+    else {
+
+      uploadedVariants =
+        variants.map(
+          (variant, index) => ({
+
+            colourName:
+              variant.colourName,
+
+            colourCode:
+              variant.colourCode,
+
+            image:
+              product.variants[index]
+                ?.image,
+
+          })
+        );
 
     }
 
@@ -894,7 +921,7 @@ asyncHandler(async (req, res) => {
 
   await product.save();
 
-  return res.status(200).json({
+  res.status(200).json({
 
     success: true,
 

@@ -471,42 +471,42 @@ asyncHandler(async(req,res)=>{
 */
 
 export const getApprovedPainters =
-asyncHandler(async(req,res)=>{
+asyncHandler(async (req, res) => {
 
     const painters =
     await PainterProfile.find({
 
-        approvalStatus:"approved"
+        approvalStatus: "approved",
+
+        status: "active",
 
     })
 
     .populate({
 
-        path:"user",
+        path: "user",
 
-        select:"firstName lastName email phoneNumber"
+        select: "firstName lastName email phoneNumber",
 
     })
 
     .sort({
 
-        approvedAt:-1
+        approvedAt: -1,
 
     });
 
     return res.status(200).json({
 
-        success:true,
+        success: true,
 
-        count:painters.length,
+        count: painters.length,
 
-        painters
+        painters,
 
     });
 
 });
-
-
 /*
 |--------------------------------------------------------------------------
 | GET SINGLE PAINTER
@@ -1443,226 +1443,238 @@ asyncHandler(async (req, res) => {
 import Review from "../models/Review.js";
 
 export const getPublicPainters =
-asyncHandler(async(req,res)=>{
+asyncHandler(async (req, res) => {
 
-const painters=
+    const painters =
+    await PainterProfile.find({
 
-await PainterProfile.find({
+        approvalStatus: "approved",
 
-approvalStatus:"approved",
+        status: "active",
 
-})
+    })
 
-.populate({
+    .populate({
 
-path:"user",
+        path: "user",
 
-select:"firstName lastName",
+        select: "firstName lastName",
 
-})
+    })
 
-.sort({
+    .sort({
 
-createdAt:-1,
+        createdAt: -1,
+
+    });
+
+    const formattedPainters =
+    await Promise.all(
+
+        painters.map(async (painter) => {
+
+            const reviews =
+            await Review.find({
+
+                painter: painter._id,
+
+                isVisible: true,
+
+            });
+
+            const totalReviews =
+            reviews.length;
+
+            const averageRating =
+            totalReviews === 0
+
+            ? 0
+
+            :
+
+            reviews.reduce(
+
+                (sum, item) => sum + item.rating,
+
+                0
+
+            ) / totalReviews;
+
+            return {
+
+                _id: painter._id,
+
+                fullName:
+                `${painter.user.firstName} ${painter.user.lastName}`,
+
+                profileImage:
+                painter.profileImage?.url || "",
+
+                bio:
+                painter.bio,
+
+                yearsOfExperience:
+                painter.yearsOfExperience,
+
+                state:
+                painter.state,
+
+                city:
+                painter.city,
+
+                skills:
+                painter.skills,
+
+                services:
+                painter.services,
+
+                preferredBrands:
+                painter.preferredBrands,
+
+                averageRating:
+                Number(
+                    averageRating.toFixed(1)
+                ),
+
+                totalReviews,
+
+            };
+
+        })
+
+    );
+
+    return res.status(200).json({
+
+        success: true,
+
+        count: formattedPainters.length,
+
+        painters: formattedPainters,
+
+    });
 
 });
 
-const formattedPainters=
 
-await Promise.all(
-
-painters.map(async(painter)=>{
-
-const reviews=
-
-await Review.find({
-
-painter:painter._id,
-
-isVisible:true,
-
-});
-
-const totalReviews=
-
-reviews.length;
-
-const averageRating=
-
-totalReviews===0
-
-?0
-
-:
-
-reviews.reduce(
-
-(sum,item)=>sum+item.rating,
-
-0
-
-)/totalReviews;
-
-return{
-
-_id:painter._id,
-
-fullName:`${painter.user.firstName} ${painter.user.lastName}`,
-
-profileImage:painter.profileImage?.url||"",
-
-bio:painter.bio,
-
-yearsOfExperience:painter.yearsOfExperience,
-
-state:painter.state,
-
-city:painter.city,
-
-skills:painter.skills,
-
-services:painter.services,
-
-preferredBrands:painter.preferredBrands,
-
-averageRating:Number(
-
-averageRating.toFixed(1)
-
-),
-
-totalReviews,
-
-};
-
-})
-
-);
-
-return res.status(200).json({
-
-success:true,
-
-count:formattedPainters.length,
-
-painters:formattedPainters,
-
-});
-
-});
-
-/*
-|--------------------------------------------------------------------------
-| GET PUBLIC PAINTER BY ID
-|--------------------------------------------------------------------------
-*/
 
 export const getPublicPainterById =
-asyncHandler(async(req,res)=>{
+asyncHandler(async (req, res) => {
 
-const painter=
-await PainterProfile.findOne({
+    const painter =
+    await PainterProfile.findOne({
 
-_id:req.params.id,
+        _id: req.params.id,
 
-approvalStatus:"approved",
+        approvalStatus: "approved",
 
-})
+        status: "active",
 
-.populate({
+    })
 
-path:"user",
+    .populate({
 
-select:"firstName lastName",
+        path: "user",
 
-});
+        select: "firstName lastName",
 
-if(!painter){
+    });
 
-return res.status(404).json({
+    if (!painter) {
 
-success:false,
+        return res.status(404).json({
 
-message:"Painter not found."
+            success: false,
 
-});
+            message: "Painter not found.",
 
-}
+        });
 
-const reviews=
-await Review.find({
+    }
 
-painter:painter._id,
+    const reviews =
+    await Review.find({
 
-isVisible:true,
+        painter: painter._id,
 
-})
-.sort({
+        isVisible: true,
 
-createdAt:-1,
+    })
 
-});
+    .sort({
 
-const totalReviews=
-reviews.length;
+        createdAt: -1,
 
-const averageRating=
+    });
 
-totalReviews===0
+    const totalReviews =
+    reviews.length;
 
-?0
+    const averageRating =
+    totalReviews === 0
 
-:
+    ? 0
 
-reviews.reduce(
+    :
 
-(sum,item)=>sum+item.rating,
+    reviews.reduce(
 
-0
+        (sum, item) => sum + item.rating,
 
-)/totalReviews;
+        0
 
-return res.status(200).json({
+    ) / totalReviews;
 
-success:true,
+    return res.status(200).json({
 
-painter:{
+        success: true,
 
-_id:painter._id,
+        painter: {
 
-fullName:`${painter.user.firstName} ${painter.user.lastName}`,
+            _id: painter._id,
 
-profileImage:painter.profileImage?.url||"",
+            fullName:
+            `${painter.user.firstName} ${painter.user.lastName}`,
 
-bio:painter.bio,
+            profileImage:
+            painter.profileImage?.url || "",
 
-yearsOfExperience:painter.yearsOfExperience,
+            bio:
+            painter.bio,
 
-state:painter.state,
+            yearsOfExperience:
+            painter.yearsOfExperience,
 
-city:painter.city,
+            state:
+            painter.state,
 
-skills:painter.skills,
+            city:
+            painter.city,
 
-services:painter.services,
+            skills:
+            painter.skills,
 
-preferredBrands:painter.preferredBrands,
+            services:
+            painter.services,
 
-portfolioImages:painter.portfolioImages,
+            preferredBrands:
+            painter.preferredBrands,
 
-averageRating:Number(
+            portfolioImages:
+            painter.portfolioImages,
 
-averageRating.toFixed(1)
+            averageRating:
+            Number(
+                averageRating.toFixed(1)
+            ),
 
-),
+            totalReviews,
 
-totalReviews,
+            reviews,
 
-reviews,
+        },
 
-},
-
-});
+    });
 
 });
 

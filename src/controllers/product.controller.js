@@ -1016,6 +1016,242 @@ asyncHandler(async (req, res) => {
     });
 
 });
+
+
+/*
+|--------------------------------------------------------------------------
+| DELETE PRODUCT
+|--------------------------------------------------------------------------
+*/
+
+export const deleteProduct =
+asyncHandler(async (req, res) => {
+
+  const product =
+    await Product.findById(
+      req.params.id
+    );
+
+  if (!product) {
+
+    return res.status(404).json({
+
+      success: false,
+
+      message:
+        "Product not found",
+
+    });
+
+  }
+
+  await product.deleteOne();
+
+  res.status(200).json({
+
+    success: true,
+
+    message:
+      "Product deleted successfully",
+
+  });
+
+});
+
+
+
+
+
+
+// VARIANT
+
+/*
+|--------------------------------------------------------------------------
+| ADD PRODUCT VARIANT
+|--------------------------------------------------------------------------
+*/
+
+/*
+|--------------------------------------------------------------------------
+| ADD PRODUCT VARIANT
+|--------------------------------------------------------------------------
+*/
+
+export const addProductVariant =
+asyncHandler(async (req, res) => {
+
+    const product =
+    await Product.findById(req.params.id);
+
+    if (!product) {
+
+        return res.status(404).json({
+            success: false,
+            message: "Product not found",
+        });
+
+    }
+
+    if (!req.file) {
+
+        return res.status(400).json({
+            success: false,
+            message: "Variant image is required.",
+        });
+
+    }
+
+    const uploaded =
+    await uploadImage(req.file);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ensure variants array exists
+    |--------------------------------------------------------------------------
+    */
+
+    if (!Array.isArray(product.variants)) {
+
+        product.variants = [];
+
+    }
+
+    product.variants.push({
+
+        colourName:
+            req.body.colourName,
+
+        colourCode:
+            req.body.colourCode,
+
+        image: {
+
+            url:
+                uploaded.url,
+
+            publicId:
+                uploaded.publicId,
+
+        },
+
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tell Mongoose the array changed
+    |--------------------------------------------------------------------------
+    */
+
+    product.markModified("variants");
+
+    await product.save();
+
+    res.status(201).json({
+
+        success: true,
+
+        message: "Variant added successfully.",
+
+        product,
+
+    });
+
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| UPDATE PRODUCT VARIANT
+|--------------------------------------------------------------------------
+*/
+
+export const updateProductVariant =
+asyncHandler(async(req,res)=>{
+
+    const product=
+    await Product.findById(
+        req.params.id
+    );
+
+    if(!product){
+
+        return res.status(404).json({
+
+            success:false,
+
+            message:"Product not found.",
+
+        });
+
+    }
+
+    const variant=
+    product.variants.id(
+        req.params.variantId
+    );
+
+    if(!variant){
+
+        return res.status(404).json({
+
+            success:false,
+
+            message:"Variant not found.",
+
+        });
+
+    }
+
+    variant.colourName=
+    req.body.colourName ??
+    variant.colourName;
+
+    variant.colourCode=
+    req.body.colourCode ??
+    variant.colourCode;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Replace Image
+    |--------------------------------------------------------------------------
+    */
+
+    if(req.file){
+
+        await cloudinary.uploader.destroy(
+            variant.image.publicId
+        );
+
+        const uploaded=
+        await uploadImage(req.file);
+
+        variant.image={
+
+            url:uploaded.url,
+
+            publicId:
+            uploaded.publicId,
+
+        };
+
+    }
+
+    await product.save();
+
+    res.status(200).json({
+
+        success:true,
+
+        message:
+        "Variant updated successfully.",
+
+        product,
+
+    });
+
+});
+
+
 /*
 |--------------------------------------------------------------------------
 | DELETE PRODUCT VARIANT

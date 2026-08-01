@@ -1690,7 +1690,7 @@ export const togglePainterStatus =
 asyncHandler(async (req, res) => {
 
     const painter =
-    await Painter.findById(req.params.id);
+    await PainterProfile.findById(req.params.id);
 
     if (!painter) {
 
@@ -1705,12 +1705,9 @@ asyncHandler(async (req, res) => {
     }
 
     painter.status =
-
     painter.status === "active"
-
-    ? "inactive"
-
-    : "active";
+        ? "inactive"
+        : "active";
 
     await painter.save();
 
@@ -1718,8 +1715,7 @@ asyncHandler(async (req, res) => {
 
         success: true,
 
-        message:
-        `Painter ${painter.status}.`,
+        message: `Painter ${painter.status}.`,
 
         painter,
 

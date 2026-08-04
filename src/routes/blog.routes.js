@@ -7,6 +7,7 @@ import {
   getFeaturedBlogs,
   updateBlog,
   deleteBlog,
+  uploadBlogImage,
 } from "../controllers/blog.controller.js";
 
 import protect from "../middleware/auth.middleware.js";
@@ -25,6 +26,20 @@ router.get(
 router.get(
   "/:slug",
   getBlog
+);
+
+/*
+|--------------------------------------------------------------------------
+| BLOG EDITOR IMAGE UPLOAD
+|--------------------------------------------------------------------------
+*/
+
+router.post(
+  "/upload-image",
+  protect,
+  authorize("admin"),
+  upload.single("image"),
+  uploadBlogImage
 );
 
 router.post(

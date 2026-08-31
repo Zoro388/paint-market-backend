@@ -1,47 +1,109 @@
 import multer from "multer";
 
 import {
-CloudinaryStorage,
-}
-from
-"multer-storage-cloudinary";
+  CloudinaryStorage,
+} from "multer-storage-cloudinary";
 
 import cloudinary
-from
-"../config/cloudinary.js";
+from "../config/cloudinary.js";
 
 const storage =
 new CloudinaryStorage({
 
-cloudinary,
+  cloudinary,
 
-params: {
+  params: async (req, file) => ({
 
-folder:
-"paint-market/portfolio",
+    folder:
+      "paint-market/portfolio",
 
-allowed_formats:[
-"jpg",
-"jpeg",
-"png",
-"webp",
-],
+    resource_type:
+      file.mimetype.startsWith("video/")
+        ? "video"
+        : "image",
 
-},
+    allowed_formats: [
+
+      "jpg",
+
+      "jpeg",
+
+      "png",
+
+      "webp",
+
+      "mp4",
+
+      "mov",
+
+      "avi",
+
+      "webm",
+
+    ],
+
+  }),
 
 });
 
 const portfolioUpload =
 multer({
 
-storage,
+  storage,
 
-limits:{
-fileSize:
-10*
-1024*
-1024,
-},
+  limits: {
+
+    fileSize:
+      50 *
+      1024 *
+      1024,
+
+  },
+
+  fileFilter:
+    (req, file, cb) => {
+
+      const allowedTypes = [
+
+        "image/jpeg",
+
+        "image/png",
+
+        "image/webp",
+
+        "video/mp4",
+
+        "video/quicktime",
+
+        "video/x-msvideo",
+
+        "video/webm",
+
+      ];
+
+      if (
+        allowedTypes.includes(
+          file.mimetype
+        )
+      ) {
+
+        cb(null, true);
+
+      } else {
+
+        cb(
+
+          new Error(
+            "Only JPG, JPEG, PNG, WEBP, MP4, MOV, AVI and WEBM files are allowed."
+          ),
+
+          false
+
+        );
+
+      }
+
+    },
 
 });
 

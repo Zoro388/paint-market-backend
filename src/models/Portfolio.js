@@ -6,30 +6,56 @@ const portfolioSchema =
       projectTitle: {
         type: String,
         required: true,
+        trim: true,
       },
 
       projectCategory: {
         type: String,
         required: true,
+        trim: true,
       },
 
       clientName: {
         type: String,
+        default: "",
+        trim: true,
       },
 
       projectLocation: {
         type: String,
         required: true,
+        trim: true,
       },
 
       projectDescription: {
         type: String,
         required: true,
+        trim: true,
       },
 
-      images: [
+      /*
+      |--------------------------------------------------------------------------
+      | PORTFOLIO MEDIA
+      |--------------------------------------------------------------------------
+      */
+
+      media: [
         {
-          type: String,
+          type: {
+            type: String,
+            enum: ["image", "video"],
+            required: true,
+          },
+
+          url: {
+            type: String,
+            required: true,
+          },
+
+          publicId: {
+            type: String,
+            default: "",
+          },
         },
       ],
 

@@ -1,4 +1,3 @@
-
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -32,12 +31,55 @@ import painterRoutes from "./routes/painter.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
 import heroSliderRoutes from "./routes/heroSlider.routes.js";
 
+/*
+|--------------------------------------------------------------------------
+| PAYSTACK WEBHOOK
+|--------------------------------------------------------------------------
+*/
+
+import {
+  paystackWebhook,
+} from "./controllers/payment.controller.js";
+
 
 import notFoundMiddleware from "./middleware/notFound.middleware.js";
 import errorMiddleware from "./middleware/error.middleware.js";
 
 
 const app = express();
+
+
+/*
+|--------------------------------------------------------------------------
+| PAYSTACK WEBHOOK
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+| This MUST come before express.json()
+|
+| Paystack signature verification requires
+| the original raw request body.
+|
+*/
+
+app.post(
+
+  "/api/payments/webhook",
+
+  express.raw({
+    type: "application/json",
+  }),
+
+  paystackWebhook
+
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| BODY PARSERS
+|--------------------------------------------------------------------------
+*/
 
 app.use(express.json());
 
@@ -47,6 +89,12 @@ app.use(
   })
 );
 
+
+/*
+|--------------------------------------------------------------------------
+| CORS
+|--------------------------------------------------------------------------
+*/
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -58,76 +106,137 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
+      if (!origin) {
+
+        return callback(
+          null,
+          true
+        );
+
+      }
+
+      if (
+        allowedOrigins.includes(
+          origin
+        )
+      ) {
+
+        return callback(
+          null,
+          true
+        );
+
       }
 
       callback(
-        new Error("Not allowed by CORS")
+        new Error(
+          "Not allowed by CORS"
+        )
       );
+
     },
+
     credentials: true,
+
   })
 );
 
-app.use(helmet());
-
-app.use(compression());
-
-app.use(cookieParser());
 
 /*
 |--------------------------------------------------------------------------
-| Logger
+| SECURITY
 |--------------------------------------------------------------------------
 */
 
-app.use(morgan("dev"));
+app.use(
+  helmet()
+);
+
+app.use(
+  compression()
+);
+
+app.use(
+  cookieParser()
+);
+
 
 /*
 |--------------------------------------------------------------------------
-| Health Check
+| LOGGER
 |--------------------------------------------------------------------------
 */
 
-app.get("/", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Paint Market API Running 🚀",
-  });
-});
+app.use(
+  morgan("dev")
+);
+
 
 /*
 |--------------------------------------------------------------------------
-| Routes
+| HEALTH CHECK
 |--------------------------------------------------------------------------
 */
 
-app.use("/api/auth", authRoutes);
+app.get(
+  "/",
+  (req, res) => {
 
-app.use("/api/users", userRoutes);
+    res.status(200).json({
+
+      success: true,
+
+      message:
+        "Paint Market API Running 🚀",
+
+    });
+
+  }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| ROUTES
+|--------------------------------------------------------------------------
+*/
+
+app.use(
+  "/api/auth",
+  authRoutes
+);
+
+app.use(
+  "/api/users",
+  userRoutes
+);
+
 app.use(
   "/api/products",
   productRoutes
 );
+
 app.use(
   "/api/orders",
   orderRoutes
 );
+
 app.use(
   "/api/payments",
   paymentRoutes
 );
+
 app.use(
   "/api/leads",
   leadRoutes
 );
+
 app.use(
   "/api/newsletter",
   newsletterRoutes
 );
+
 app.use(
   "/api/painter-requests",
   painterRequestRoutes
@@ -158,7 +267,6 @@ app.use(
   cartRoutes
 );
 
-
 app.use(
   "/api/admin",
   adminRoutes
@@ -168,7 +276,6 @@ app.use(
   "/api/tools",
   toolRoutes
 );
-
 
 app.use(
   "/api/media",
@@ -181,8 +288,8 @@ app.use(
 );
 
 app.use(
-"/api/reviews",
-reviewRoutes
+  "/api/reviews",
+  reviewRoutes
 );
 
 app.use(
@@ -190,17 +297,30 @@ app.use(
   masterDataRoutes
 );
 
-app.use("/api/hero", heroSliderRoutes);
+app.use(
+  "/api/hero",
+  heroSliderRoutes
+);
 
-app.use("/api/painters", painterRoutes);
+app.use(
+  "/api/painters",
+  painterRoutes
+);
+
+
 /*
 |--------------------------------------------------------------------------
-| Error Handling
+| ERROR HANDLING
 |--------------------------------------------------------------------------
 */
 
-app.use(notFoundMiddleware);
+app.use(
+  notFoundMiddleware
+);
 
-app.use(errorMiddleware);
+app.use(
+  errorMiddleware
+);
+
 
 export default app;

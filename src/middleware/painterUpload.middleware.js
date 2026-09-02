@@ -1,9 +1,83 @@
+// import multer from "multer";
+
+// const storage =
+// multer.memoryStorage();
+
+// const painterUpload =
+// multer({
+
+//   storage,
+
+//   limits: {
+
+//     fileSize:
+//       50 *
+//       1024 *
+//       1024,
+
+//   },
+
+// });
+
+// export default painterUpload;
+
+
 import multer from "multer";
 
-const storage =
-multer.memoryStorage();
+import {
+  CloudinaryStorage,
+} from "multer-storage-cloudinary";
 
-const painterUpload =
+import cloudinary
+from "../config/cloudinary.js";
+
+
+const storage =
+new CloudinaryStorage({
+
+  cloudinary,
+
+  params: async (
+    req,
+    file
+  ) => ({
+
+    folder:
+      "paint-market/portfolio",
+
+    resource_type:
+      file.mimetype.startsWith(
+        "video/"
+      )
+        ? "video"
+        : "image",
+
+    allowed_formats: [
+
+      "jpg",
+
+      "jpeg",
+
+      "png",
+
+      "webp",
+
+      "mp4",
+
+      "mov",
+
+      "avi",
+
+      "webm",
+
+    ],
+
+  }),
+
+});
+
+
+const portfolioUpload =
 multer({
 
   storage,
@@ -15,8 +89,81 @@ multer({
       1024 *
       1024,
 
+    files:
+      20,
+
   },
+
+
+  fileFilter:
+    (
+      req,
+      file,
+      cb
+    ) => {
+
+      const allowedTypes = [
+
+        /*
+        |--------------------------------------------------------------------------
+        | IMAGES
+        |--------------------------------------------------------------------------
+        */
+
+        "image/jpeg",
+
+        "image/png",
+
+        "image/webp",
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | VIDEOS
+        |--------------------------------------------------------------------------
+        */
+
+        "video/mp4",
+
+        "video/quicktime",
+
+        "video/x-msvideo",
+
+        "video/webm",
+
+      ];
+
+
+      if (
+
+        allowedTypes.includes(
+          file.mimetype
+        )
+
+      ) {
+
+        cb(
+          null,
+          true
+        );
+
+      } else {
+
+        cb(
+
+          new Error(
+            "Only JPG, JPEG, PNG, WEBP, MP4, MOV, AVI and WEBM files are allowed."
+          ),
+
+          false
+
+        );
+
+      }
+
+    },
 
 });
 
-export default painterUpload;
+
+export default portfolioUpload;

@@ -8,99 +8,243 @@ import asyncHandler from "../utils/asyncHandler.js";
 */
 
 export const createPortfolio =
-asyncHandler(async (
-  req,
-  res
-) => {
+asyncHandler(async (req, res) => {
 
-  const files =
-    req.files || [];
+  try {
 
-  if (
-    files.length === 0
-  ) {
+    console.log(
+      "========== CREATE PORTFOLIO =========="
+    );
 
-    return res.status(400).json({
+    console.log(
+      "BODY:",
+      req.body
+    );
+
+    console.log(
+      "FILES:",
+      req.files
+        ? req.files.map((file) => ({
+            fieldname: file.fieldname,
+            mimetype: file.mimetype,
+            path: file.path,
+            filename: file.filename,
+          }))
+        : []
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDATE FILES
+    |--------------------------------------------------------------------------
+    */
+
+    const files =
+      req.files || [];
+
+    if (files.length === 0) {
+
+      return res.status(400).json({
+
+        success: false,
+
+        message:
+          "Please upload at least one image or video.",
+
+      });
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDATE REQUIRED FIELDS
+    |--------------------------------------------------------------------------
+    */
+
+    const {
+
+      projectTitle,
+
+      projectCategory,
+
+      projectLocation,
+
+      projectDescription,
+
+      clientName,
+
+      completionDate,
+
+      featured,
+
+    } = req.body;
+
+
+    if (!projectTitle) {
+
+      return res.status(400).json({
+
+        success: false,
+
+        message:
+          "Project title is required.",
+
+      });
+
+    }
+
+
+    if (!projectCategory) {
+
+      return res.status(400).json({
+
+        success: false,
+
+        message:
+          "Project category is required.",
+
+      });
+
+    }
+
+
+    if (!projectLocation) {
+
+      return res.status(400).json({
+
+        success: false,
+
+        message:
+          "Project location is required.",
+
+      });
+
+    }
+
+
+    if (!projectDescription) {
+
+      return res.status(400).json({
+
+        success: false,
+
+        message:
+          "Project description is required.",
+
+      });
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | FORMAT MEDIA
+    |--------------------------------------------------------------------------
+    */
+
+    const media =
+      files.map((file) => ({
+
+        type:
+          file.mimetype.startsWith(
+            "video/"
+          )
+            ? "video"
+            : "image",
+
+        url:
+          file.path,
+
+        publicId:
+          file.filename || "",
+
+      }));
+
+
+    console.log(
+      "FORMATTED MEDIA:",
+      media
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CREATE PORTFOLIO PROJECT
+    |--------------------------------------------------------------------------
+    */
+
+    const project =
+      await Portfolio.create({
+
+        projectTitle,
+
+        projectCategory,
+
+        clientName:
+          clientName || "",
+
+        projectLocation,
+
+        projectDescription,
+
+        media,
+
+        completionDate:
+          completionDate || null,
+
+        featured:
+          featured === "true" ||
+          featured === true,
+
+      });
+
+
+    console.log(
+      "PORTFOLIO CREATED:",
+      project._id
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | RESPONSE
+    |--------------------------------------------------------------------------
+    */
+
+    res.status(201).json({
+
+      success: true,
+
+      message:
+        "Portfolio project added successfully.",
+
+      project,
+
+    });
+
+
+  } catch (error) {
+
+    console.error(
+      "========== CREATE PORTFOLIO ERROR =========="
+    );
+
+    console.error(error);
+
+    res.status(500).json({
 
       success: false,
 
       message:
-        "Please upload at least one image or video.",
+        error.message ||
+        "Failed to create portfolio project.",
 
     });
 
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | FORMAT MEDIA
-  |--------------------------------------------------------------------------
-  */
-
-  const media =
-    files.map((file) => ({
-
-      type:
-        file.mimetype.startsWith("video/")
-          ? "video"
-          : "image",
-
-      url:
-        file.path,
-
-      publicId:
-        file.filename || "",
-
-    }));
-
-  /*
-  |--------------------------------------------------------------------------
-  | CREATE PROJECT
-  |--------------------------------------------------------------------------
-  */
-
-  const project =
-    await Portfolio.create({
-
-      projectTitle:
-        req.body.projectTitle,
-
-      projectCategory:
-        req.body.projectCategory,
-
-      clientName:
-        req.body.clientName,
-
-      projectLocation:
-        req.body.projectLocation,
-
-      projectDescription:
-        req.body.projectDescription,
-
-      media,
-
-      completionDate:
-        req.body.completionDate,
-
-      featured:
-        req.body.featured ===
-        "true",
-
-    });
-
-  res.status(201).json({
-
-    success: true,
-
-    message:
-      "Portfolio project added successfully.",
-
-    project,
-
-  });
-
 });
-
 
 /*
 |--------------------------------------------------------------------------

@@ -158,7 +158,7 @@ export const sendPainterRequestEmail = async ({
 
       buttonText: "Open Painter Dashboard",
 
-      buttonLink: `${process.env.FRONTEND_URL}/painter/dashboard`,
+      buttonLink: `${process.env.FRONTEND_URL}/login`,
     });
 
     await sendEmail({

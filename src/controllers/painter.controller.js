@@ -1505,27 +1505,51 @@ export const getPublicPainters =
 asyncHandler(async (req, res) => {
 
     const painters =
-    await PainterProfile.find({
+await PainterProfile.find({
 
-        approvalStatus: "approved",
+    approvalStatus: "approved",
 
-        status: "active",
+    status: "active",
 
-    })
+})
 
-    .populate({
+.populate({
 
-        path: "user",
+    path: "user",
 
-        select: "firstName lastName",
+    select: "firstName lastName",
 
-    })
+})
 
-    .sort({
+.populate({
 
-        createdAt: -1,
+    path: "skills",
 
-    });
+    select: "name type",
+
+})
+
+.populate({
+
+    path: "services",
+
+    select: "name type",
+
+})
+
+.populate({
+
+    path: "preferredBrands",
+
+    select: "name type",
+
+})
+
+.sort({
+
+    createdAt: -1,
+
+});
 
     const formattedPainters =
     await Promise.all(
@@ -1633,12 +1657,35 @@ asyncHandler(async (req, res) => {
 
     .populate({
 
-        path: "user",
+    path: "user",
 
-        select: "firstName lastName",
+    select: "firstName lastName",
 
-    });
+})
 
+.populate({
+
+    path: "skills",
+
+    select: "name type",
+
+})
+
+.populate({
+
+    path: "services",
+
+    select: "name type",
+
+})
+
+.populate({
+
+    path: "preferredBrands",
+
+    select: "name type",
+
+});
     if (!painter) {
 
         return res.status(404).json({

@@ -443,6 +443,30 @@ asyncHandler(async(req,res)=>{
 
     })
 
+    .populate({
+
+        path:"skills",
+
+        select:"name type",
+
+    })
+
+    .populate({
+
+        path:"services",
+
+        select:"name type",
+
+    })
+
+    .populate({
+
+        path:"preferredBrands",
+
+        select:"name type",
+
+    })
+
     .sort({
 
         applicationDate:-1
@@ -462,8 +486,6 @@ asyncHandler(async(req,res)=>{
 });
 
 
-
-
 /*
 |--------------------------------------------------------------------------
 | GET APPROVED PAINTERS
@@ -474,27 +496,46 @@ export const getApprovedPainters =
 asyncHandler(async (req, res) => {
 
     const painters =
-    await PainterProfile.find({
+await PainterProfile.find({
 
-        approvalStatus: "approved",
+    approvalStatus: "approved",
 
-        // status: "active",
+    status: "active",
 
-    })
+})
+.populate({
 
-    .populate({
+    path: "user",
 
-        path: "user",
+    select: "firstName lastName email phoneNumber",
 
-        select: "firstName lastName email phoneNumber",
+})
+.populate({
 
-    })
+    path: "skills",
 
-    .sort({
+    select: "name type",
 
-        approvedAt: -1,
+})
+.populate({
 
-    });
+    path: "services",
+
+    select: "name type",
+
+})
+.populate({
+
+    path: "preferredBrands",
+
+    select: "name type",
+
+})
+.sort({
+
+    approvedAt: -1,
+
+});
 
     return res.status(200).json({
 
@@ -531,11 +572,29 @@ asyncHandler(async(req,res)=>{
 
     })
 
-    .populate("skills")
+    .populate({
 
-    .populate("services")
+        path:"skills",
 
-    .populate("preferredBrands");
+        select:"name type",
+
+    })
+
+    .populate({
+
+        path:"services",
+
+        select:"name type",
+
+    })
+
+    .populate({
+
+        path:"preferredBrands",
+
+        select:"name type",
+
+    });
 
     if(!painter){
 

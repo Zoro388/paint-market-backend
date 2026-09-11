@@ -14,9 +14,9 @@ const orderItemSchema = new mongoose.Schema(
     },
 
     selectedColour: {
-      type: String,
-      required: true,
-    },
+  type: String,
+  default: "Default",
+},
 
     quantity: {
       type: Number,
@@ -60,19 +60,19 @@ const orderSchema = new mongoose.Schema(
     },
 
     deliveryAddress: {
-      type: String,
-      required: true,
-    },
+  type: String,
+  default: "Not provided",
+},
 
     state: {
-      type: String,
-      required: true,
-    },
+  type: String,
+  default: "Not provided",
+},
 
     city: {
-      type: String,
-      required: true,
-    },
+  type: String,
+  default: "Not provided",
+},
 
     orderedProducts: [orderItemSchema],
 
@@ -82,10 +82,10 @@ const orderSchema = new mongoose.Schema(
     },
 
     paymentMethod: {
-      type: String,
-      enum: ["paystack", "bank-transfer"],
-      default: "paystack",
-    },
+  type: String,
+  enum: ["flutterwave", "bank-transfer"],
+  default: "flutterwave",
+},
 
     paymentStatus: {
       type: String,

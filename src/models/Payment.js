@@ -11,7 +11,7 @@ const paymentSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      required: false,
       index: true,
     },
 
@@ -30,7 +30,7 @@ const paymentSchema = new mongoose.Schema(
 
     /*
     |--------------------------------------------------------------------------
-    | PAYSTACK REFERENCE
+    | FLUTTERWAVE REFERENCE
     |--------------------------------------------------------------------------
     */
 
@@ -43,7 +43,7 @@ const paymentSchema = new mongoose.Schema(
 
     /*
     |--------------------------------------------------------------------------
-    | PAYSTACK TRANSACTION ID
+    | FLUTTERWAVE TRANSACTION ID
     |--------------------------------------------------------------------------
     */
 
@@ -102,7 +102,7 @@ const paymentSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
-      default: "paystack",
+      default: "flutterwave",
     },
 
     /*

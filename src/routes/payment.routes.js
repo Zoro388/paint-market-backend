@@ -1,9 +1,7 @@
 import express from "express";
-
 import protect from "../middleware/auth.middleware.js";
 
 import {
-  initializePayment,
   verifyPayment,
   paymentHistory,
 } from "../controllers/payment.controller.js";
@@ -12,25 +10,16 @@ const router = express.Router();
 
 /*
 |--------------------------------------------------------------------------
-| INITIALIZE PAYSTACK PAYMENT
+| PAYMENT VERIFICATION
 |--------------------------------------------------------------------------
-*/
-
-router.post(
-  "/initialize",
-  protect,
-  initializePayment
-);
-
-/*
-|--------------------------------------------------------------------------
-| VERIFY PAYSTACK PAYMENT
-|--------------------------------------------------------------------------
+|
+| Frontend sends:
+| POST /api/verify-payment
+|
 */
 
 router.post(
   "/verify",
-  protect,
   verifyPayment
 );
 
@@ -38,6 +27,9 @@ router.post(
 |--------------------------------------------------------------------------
 | PAYMENT HISTORY
 |--------------------------------------------------------------------------
+|
+| Existing authenticated endpoint.
+|
 */
 
 router.get(

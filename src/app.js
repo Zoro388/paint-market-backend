@@ -30,6 +30,8 @@ import masterDataRoutes from "./routes/masterData.routes.js";
 import painterRoutes from "./routes/painter.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
 import heroSliderRoutes from "./routes/heroSlider.routes.js";
+import checkoutRoutes from "./routes/checkout.routes.js";
+import frontendPaymentRoutes from "./routes/frontendPayment.routes.js";
 
 /*
 |--------------------------------------------------------------------------
@@ -37,9 +39,9 @@ import heroSliderRoutes from "./routes/heroSlider.routes.js";
 |--------------------------------------------------------------------------
 */
 
-import {
-  paystackWebhook,
-} from "./controllers/payment.controller.js";
+// import {
+//   paystackWebhook,
+// } from "./controllers/payment.controller.js";
 
 
 import notFoundMiddleware from "./middleware/notFound.middleware.js";
@@ -62,17 +64,17 @@ const app = express();
 |
 */
 
-app.post(
+// app.post(
 
-  "/api/payments/webhook",
+//   "/api/payments/webhook",
 
-  express.raw({
-    type: "application/json",
-  }),
+//   express.raw({
+//     type: "application/json",
+//   }),
 
-  paystackWebhook
+//   paystackWebhook
 
-);
+// );
 
 
 /*
@@ -307,6 +309,16 @@ app.use(
   painterRoutes
 );
 
+
+app.use(
+  "/api/checkout",
+  checkoutRoutes
+);
+
+app.use(
+  "/api",
+  frontendPaymentRoutes
+);
 
 /*
 |--------------------------------------------------------------------------

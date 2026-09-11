@@ -1840,3 +1840,210 @@ asyncHandler(async (req, res) => {
     });
 
 });
+
+
+export const updatePainterProfile = asyncHandler(async (req, res) => {
+  const painter = await PainterProfile.findOne({
+    user: req.user._id,
+  });
+
+  if (!painter) {
+    return res.status(404).json({
+      success: false,
+      message: "Painter profile not found.",
+    });
+  }
+
+  const {
+    bio,
+    yearsOfExperience,
+    state,
+    city,
+    skills,
+    services,
+    preferredBrands,
+    removePortfolioImages,
+  } = req.body;
+
+  /*
+  |--------------------------------------------------------------------------
+  | BASIC PROFILE INFORMATION
+  |--------------------------------------------------------------------------
+  */
+
+  if (bio !== undefined) {
+    painter.bio = bio;
+  }
+
+  if (yearsOfExperience !== undefined) {
+    const experience = Number(yearsOfExperience);
+
+    if (Number.isNaN(experience) || experience < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Years of experience must be a valid number greater than or equal to 0.",
+      });
+    }
+
+    painter.yearsOfExperience = experience;
+  }
+
+  if (state !== undefined) {
+    painter.state = state;
+  }
+
+  if (city !== undefined) {
+    painter.city = city;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | MASTER DATA
+  |--------------------------------------------------------------------------
+  | These fields contain MasterData ObjectIds.
+  */
+
+  if (skills !== undefined) {
+    painter.skills = parseArrayField(skills);
+  }
+
+  if (services !== undefined) {
+    painter.services = parseArrayField(services);
+  }
+
+  if (preferredBrands !== undefined) {
+    painter.preferredBrands = parseArrayField(preferredBrands);
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | PROFILE IMAGE
+  |--------------------------------------------------------------------------
+  */
+
+  const newProfileImage = req.files?.profileImage?.[0];
+
+  if (newProfileImage) {
+    // Delete old Cloudinary image if one exists
+    if (painter.profileImage?.publicId) {
+      try {
+        await deleteFile(painter.profileImage.publicId);
+      } catch (error) {
+        console.error(
+          "Failed to delete old painter profile image:",
+          error.message
+        );
+      }
+    }
+
+    const uploadedProfile = await uploadBuffer(
+      newProfileImage.buffer,
+      "paintmarket/painters/profile"
+    );
+
+    painter.profileImage = {
+      url: uploadedProfile.secure_url || uploadedProfile.url,
+      publicId: uploadedProfile.public_id,
+    };
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | REMOVE PORTFOLIO IMAGES
+  |--------------------------------------------------------------------------
+  */
+
+  if (removePortfolioImages !== undefined) {
+    const imagesToRemove = parseArrayField(removePortfolioImages);
+
+    if (imagesToRemove.length > 0) {
+      const imagesToKeep = [];
+
+      for (const image of painter.portfolioImages || []) {
+        if (imagesToRemove.includes(image.publicId)) {
+          if (image.publicId) {
+            try {
+              await deleteFile(image.publicId);
+            } catch (error) {
+              console.error(
+                "Failed to delete painter portfolio image:",
+                error.message
+              );
+            }
+          }
+        } else {
+          imagesToKeep.push(image);
+        }
+      }
+
+      painter.portfolioImages = imagesToKeep;
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | ADD NEW PORTFOLIO IMAGES
+  |--------------------------------------------------------------------------
+  */
+
+  const newPortfolioImages = req.files?.portfolioImages || [];
+
+  if (newPortfolioImages.length > 0) {
+    const uploadedPortfolioImages = [];
+
+    for (const file of newPortfolioImages) {
+      const uploaded = await uploadBuffer(
+        file.buffer,
+        "paintmarket/painters/portfolio"
+      );
+
+      uploadedPortfolioImages.push({
+        url: uploaded.secure_url || uploaded.url,
+        publicId: uploaded.public_id,
+      });
+    }
+
+    painter.portfolioImages.push(...uploadedPortfolioImages);
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | PROFILE COMPLETION
+  |--------------------------------------------------------------------------
+  */
+
+  painter.profileCompletion =
+    calculatePainterProfileCompletion(painter);
+
+  await painter.save();
+
+  /*
+  |--------------------------------------------------------------------------
+  | RETURN UPDATED PROFILE
+  |--------------------------------------------------------------------------
+  */
+
+  const updatedPainter = await PainterProfile.findById(painter._id)
+    .populate({
+      path: "user",
+      select: "firstName lastName email phone profileImage",
+    })
+    .populate({
+      path: "skills",
+      select: "name type",
+    })
+    .populate({
+      path: "services",
+      select: "name type",
+    })
+    .populate({
+      path: "preferredBrands",
+      select: "name type",
+    });
+
+  return res.status(200).json({
+    success: true,
+    message: "Painter profile updated successfully.",
+    painter: updatedPainter,
+  });
+});

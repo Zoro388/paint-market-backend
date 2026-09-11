@@ -8,6 +8,7 @@ import authorize from "../middleware/role.middleware.js";
 import {
 
     registerPainter,
+    updatePainterProfile,
 
     getPendingPainters,
 
@@ -114,6 +115,22 @@ getApprovedPainters
 //     getAllPainters
 // );
 
+router.put(
+  "/profile",
+  protect,
+  authorize("painter"),
+  painterUpload.fields([
+    {
+      name: "profileImage",
+      maxCount: 1,
+    },
+    {
+      name: "portfolioImages",
+      maxCount: 6,
+    },
+  ]),
+  updatePainterProfile
+);
 router.patch(
     "/:id/status",
     protect,

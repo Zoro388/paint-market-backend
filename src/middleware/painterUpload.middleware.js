@@ -11,27 +11,45 @@ const painterUpload = multer({
   },
 
   fileFilter: (req, file, cb) => {
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-
+    const allowedVideoTypes = [
       "video/mp4",
       "video/quicktime",
       "video/x-msvideo",
       "video/webm",
     ];
 
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(
-        new Error(
-          "Only JPG, JPEG, PNG, WEBP, MP4, MOV, AVI and WEBM files are allowed."
-        ),
-        false
-      );
+    /*
+    |--------------------------------------------------------------------------
+    | ACCEPT ANY IMAGE TYPE
+    |--------------------------------------------------------------------------
+    */
+
+    if (file.mimetype.startsWith("image/")) {
+      return cb(null, true);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | ACCEPT SUPPORTED VIDEO TYPES
+    |--------------------------------------------------------------------------
+    */
+
+    if (allowedVideoTypes.includes(file.mimetype)) {
+      return cb(null, true);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | REJECT EVERYTHING ELSE
+    |--------------------------------------------------------------------------
+    */
+
+    return cb(
+      new Error(
+        "Only image files and supported video files are allowed."
+      ),
+      false
+    );
   },
 });
 

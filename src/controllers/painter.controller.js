@@ -1371,13 +1371,23 @@ asyncHandler(async (req, res) => {
 
         user: req.user._id,
 
-    }).populate(
-
+    })
+    .populate(
         "user",
-
-        "firstName lastName email phoneNumber"
-
-    );
+        "firstName lastName email phoneNumber profileImage"
+    )
+    .populate({
+        path: "skills",
+        select: "name type",
+    })
+    .populate({
+        path: "services",
+        select: "name type",
+    })
+    .populate({
+        path: "preferredBrands",
+        select: "name type",
+    });
 
     if (!painter) {
 
@@ -1399,9 +1409,7 @@ asyncHandler(async (req, res) => {
     */
 
     if (
-
         painter.approvalStatus !== "approved"
-
     ) {
 
         return res.status(403).json({
@@ -1427,6 +1435,12 @@ asyncHandler(async (req, res) => {
 
         painter: {
 
+            /*
+            |--------------------------------------------------------------------------
+            | BASIC IDENTIFICATION
+            |--------------------------------------------------------------------------
+            */
+
             id: painter._id,
 
             firstName:
@@ -1441,6 +1455,15 @@ asyncHandler(async (req, res) => {
             phoneNumber:
             painter.user.phoneNumber,
 
+            /*
+            |--------------------------------------------------------------------------
+            | PROFILE
+            |--------------------------------------------------------------------------
+            */
+
+            bio:
+            painter.bio,
+
             profileImage:
             painter.profileImage,
 
@@ -1453,8 +1476,62 @@ asyncHandler(async (req, res) => {
             yearsOfExperience:
             painter.yearsOfExperience,
 
+            /*
+            |--------------------------------------------------------------------------
+            | SKILLS / SERVICES / BRANDS
+            |--------------------------------------------------------------------------
+            */
+
+            skills:
+            painter.skills || [],
+
+            services:
+            painter.services || [],
+
+            preferredBrands:
+            painter.preferredBrands || [],
+
+            /*
+            |--------------------------------------------------------------------------
+            | PORTFOLIO & VERIFICATION MEDIA
+            |--------------------------------------------------------------------------
+            */
+
+            portfolioImages:
+            painter.portfolioImages || [],
+
+            verificationVideo:
+            painter.verificationVideo,
+
+            /*
+            |--------------------------------------------------------------------------
+            | PAINTER STATUS
+            |--------------------------------------------------------------------------
+            */
+
             availabilityStatus:
             painter.availabilityStatus,
+
+            approvalStatus:
+            painter.approvalStatus,
+
+            status:
+            painter.status,
+
+            isVerified:
+            painter.isVerified,
+
+            isFeatured:
+            painter.isFeatured,
+
+            featuredOrder:
+            painter.featuredOrder,
+
+            /*
+            |--------------------------------------------------------------------------
+            | PAINTER STATISTICS
+            |--------------------------------------------------------------------------
+            */
 
             averageRating:
             painter.averageRating,
@@ -1468,16 +1545,49 @@ asyncHandler(async (req, res) => {
             profileViews:
             painter.profileViews,
 
+            /*
+            |--------------------------------------------------------------------------
+            | PROFILE COMPLETION
+            |--------------------------------------------------------------------------
+            */
+
             profileCompletion:
             painter.profileCompletion,
 
-            isFeatured:
-            painter.isFeatured,
+            /*
+            |--------------------------------------------------------------------------
+            | APPLICATION INFORMATION
+            |--------------------------------------------------------------------------
+            */
 
-            isVerified:
-            painter.isVerified,
+            applicationDate:
+            painter.applicationDate,
+
+            approvedAt:
+            painter.approvedAt,
+
+            rejectionReason:
+            painter.rejectionReason,
+
+            /*
+            |--------------------------------------------------------------------------
+            | TIMESTAMPS
+            |--------------------------------------------------------------------------
+            */
+
+            createdAt:
+            painter.createdAt,
+
+            updatedAt:
+            painter.updatedAt,
 
         },
+
+        /*
+        |--------------------------------------------------------------------------
+        | DASHBOARD STATISTICS
+        |--------------------------------------------------------------------------
+        */
 
         statistics: {
 
@@ -1492,7 +1602,6 @@ asyncHandler(async (req, res) => {
     });
 
 });
-
 /*
 |--------------------------------------------------------------------------
 | GET PUBLIC PAINTERS

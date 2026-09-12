@@ -1,6 +1,28 @@
 import multer from "multer";
+import path from "path";
 
 const storage = multer.memoryStorage();
+
+const allowedVideoTypes = [
+  "video/mp4",
+  "video/quicktime",
+  "video/x-msvideo",
+  "video/webm",
+];
+
+const allowedImageExtensions = [
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".gif",
+  ".bmp",
+  ".tif",
+  ".tiff",
+  ".avif",
+  ".svg",
+  ".ico",
+];
 
 const painterUpload = multer({
   storage,
@@ -11,20 +33,28 @@ const painterUpload = multer({
   },
 
   fileFilter: (req, file, cb) => {
-    const allowedVideoTypes = [
-      "video/mp4",
-      "video/quicktime",
-      "video/x-msvideo",
-      "video/webm",
-    ];
+    const mimetype = file.mimetype?.toLowerCase() || "";
+    const extension = path
+      .extname(file.originalname || "")
+      .toLowerCase();
 
     /*
     |--------------------------------------------------------------------------
-    | ACCEPT ANY IMAGE TYPE
+    | ACCEPT ANY IMAGE MIME TYPE
     |--------------------------------------------------------------------------
     */
 
-    if (file.mimetype.startsWith("image/")) {
+    if (mimetype.startsWith("image/")) {
+      return cb(null, true);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | ACCEPT IMAGE FILES EVEN IF THEIR MIME TYPE IS GENERIC
+    |--------------------------------------------------------------------------
+    */
+
+    if (allowedImageExtensions.includes(extension)) {
       return cb(null, true);
     }
 
@@ -34,7 +64,7 @@ const painterUpload = multer({
     |--------------------------------------------------------------------------
     */
 
-    if (allowedVideoTypes.includes(file.mimetype)) {
+    if (allowedVideoTypes.includes(mimetype)) {
       return cb(null, true);
     }
 

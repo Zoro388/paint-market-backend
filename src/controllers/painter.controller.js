@@ -2046,9 +2046,9 @@ export const updatePainterProfile = asyncHandler(async (req, res) => {
     }
 
     const uploadedProfile = await uploadBuffer(
-      newProfileImage.buffer,
-      "paintmarket/painters/profile"
-    );
+  newProfileImage,
+  "paintmarket/painters/profile"
+);
 
     painter.profileImage = {
       url: uploadedProfile.secure_url || uploadedProfile.url,
@@ -2102,7 +2102,7 @@ export const updatePainterProfile = asyncHandler(async (req, res) => {
 
     for (const file of newPortfolioImages) {
       const uploaded = await uploadBuffer(
-        file.buffer,
+        file,
         "paintmarket/painters/portfolio"
       );
 

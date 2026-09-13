@@ -77,12 +77,24 @@ const createCheckout = asyncHandler(async (req, res) => {
   let totalAmount = 0;
 
   for (const item of items) {
+    /*
+    |--------------------------------------------------------------------------
+    | PRODUCT ID
+    |--------------------------------------------------------------------------
+    */
+
     if (!item.id) {
       return res.status(400).json({
         success: false,
-        message: "Every cart item must contain an id.",
+        message: "Every cart item must contain a product id.",
       });
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | QUANTITY
+    |--------------------------------------------------------------------------
+    */
 
     const quantity = Number(item.quantity);
 
@@ -92,6 +104,12 @@ const createCheckout = asyncHandler(async (req, res) => {
         message: `Invalid quantity for product ${item.id}.`,
       });
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | FIND PRODUCT FROM DATABASE
+    |--------------------------------------------------------------------------
+    */
 
     const product = await Product.findById(item.id);
 
@@ -104,24 +122,35 @@ const createCheckout = asyncHandler(async (req, res) => {
 
     /*
     |--------------------------------------------------------------------------
-    | CHECK STOCK
+    | PRODUCT NAME
+    |--------------------------------------------------------------------------
+    | Your Product model uses "productName", NOT "name".
     |--------------------------------------------------------------------------
     */
 
-    if (
-      typeof product.stockQuantity === "number" &&
-      product.stockQuantity < quantity
-    ) {
-      return res.status(400).json({
+    if (!product.productName) {
+      return res.status(500).json({
         success: false,
-        message: `${product.name} does not have enough stock.`,
+        message: `Product ${item.id} does not have a valid productName.`,
       });
     }
 
     /*
     |--------------------------------------------------------------------------
-    | IMPORTANT:
-    | DO NOT TRUST item.price FROM FRONTEND
+    | CHECK STOCK
+    |--------------------------------------------------------------------------
+    |
+    | Your current Product model does not have stockQuantity.
+    | Therefore we are NOT checking stock here.
+    |
+    */
+
+    /*
+    |--------------------------------------------------------------------------
+    | GET PRICE FROM DATABASE
+    |--------------------------------------------------------------------------
+    |
+    | We intentionally do NOT trust item.price from the frontend.
     |--------------------------------------------------------------------------
     */
 
@@ -130,20 +159,41 @@ const createCheckout = asyncHandler(async (req, res) => {
     if (!Number.isFinite(unitPrice)) {
       return res.status(500).json({
         success: false,
-        message: `Invalid price configured for ${product.name}.`,
+        message:
+          `Invalid price configured for ${product.productName}.`,
       });
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | CALCULATE SUBTOTAL
+    |--------------------------------------------------------------------------
+    */
 
     const subtotal = unitPrice * quantity;
 
     totalAmount += subtotal;
 
+    /*
+    |--------------------------------------------------------------------------
+    | ADD PRODUCT TO ORDER
+    |--------------------------------------------------------------------------
+    */
+
     orderedProducts.push({
       product: product._id,
-      productName: product.name,
-      selectedColour: item.selectedColour || "Default",
+
+      // IMPORTANT:
+      // Product model uses productName
+      productName: product.productName,
+
+      selectedColour:
+        item.selectedColour || "Default",
+
       quantity,
+
       unitPrice,
+
       subtotal,
     });
   }
@@ -154,9 +204,10 @@ const createCheckout = asyncHandler(async (req, res) => {
   |--------------------------------------------------------------------------
   */
 
-  const tx_ref = `PM-${Date.now()}-${crypto
-    .randomBytes(5)
-    .toString("hex")}`;
+  const tx_ref =
+    `PM-${Date.now()}-${crypto
+      .randomBytes(5)
+      .toString("hex")}`;
 
   /*
   |--------------------------------------------------------------------------
@@ -218,12 +269,13 @@ const createCheckout = asyncHandler(async (req, res) => {
 
   /*
   |--------------------------------------------------------------------------
-  | RESPONSE EXPECTED BY FRONTEND
+  | SEND RESPONSE TO FRONTEND
   |--------------------------------------------------------------------------
   */
 
   return res.status(201).json({
     success: true,
+    message: "Checkout initialized successfully.",
     amount: totalAmount,
     tx_ref,
     orderId: order._id,

@@ -7,7 +7,7 @@ const mediaUpload = multer({
 
   limits: {
     fileSize:
-      50 *
+      100 *
       1024 *
       1024, // 50MB
   },

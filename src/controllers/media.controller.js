@@ -2,121 +2,130 @@ import Media from "../models/Media.js";
 import cloudinary from "../config/cloudinary.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
-export const createMedia =
-  asyncHandler(async (req, res) => {
 
-    const { title, description } =
-      req.body;
+// ======================================================
+// CREATE MEDIA
+// ======================================================
 
-    if (!title || !description) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Title and description are required",
-      });
-    }
+export const createMedia = asyncHandler(async (req, res) => {
+  const {
+    title,
+    category,
+    description,
+  } = req.body;
 
-    let imageUrls = [];
-    let videoUrl = "";
+  // Validate required fields
+  if (!title || !category || !description) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Title, category and description are required",
+    });
+  }
 
-    // Upload Images
-    if (
-      req.files?.images &&
-      req.files.images.length > 0
-    ) {
+  let imageUrls = [];
+  let videoUrl = "";
 
-      for (const file of req.files.images) {
+  // ======================================================
+  // UPLOAD IMAGES
+  // ======================================================
 
-        const result =
-          await cloudinary.uploader.upload(
-            `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
-            {
-              folder:
-                "paint-market/gallery/images",
-            }
-          );
-
-        imageUrls.push(result.secure_url);
-      }
-    }
-
-    // Upload Video
-    if (
-      req.files?.video &&
-      req.files.video.length > 0
-    ) {
-
-      const file =
-        req.files.video[0];
-
+  if (
+    req.files?.images &&
+    req.files.images.length > 0
+  ) {
+    for (const file of req.files.images) {
       const result =
         await cloudinary.uploader.upload(
-          `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+          `data:${file.mimetype};base64,${file.buffer.toString(
+            "base64"
+          )}`,
           {
             folder:
-              "paint-market/gallery/videos",
-            resource_type: "video",
+              "paint-market/gallery/images",
           }
         );
 
-      videoUrl =
-        result.secure_url;
+      imageUrls.push(result.secure_url);
     }
+  }
 
-    const media =
-      await Media.create({
-        title,
-        description,
-        images: imageUrls,
-        video: videoUrl,
-      });
+  // ======================================================
+  // UPLOAD VIDEO
+  // ======================================================
 
-    res.status(201).json({
-      success: true,
-      message:
-        "Media uploaded successfully",
-      media,
-    });
+  if (
+    req.files?.video &&
+    req.files.video.length > 0
+  ) {
+    const file = req.files.video[0];
 
-  });
-
-
-
-
-
-export const getMedia =
-  asyncHandler(async (req, res) => {
-
-    const media =
-      await Media.find().sort({
-        createdAt: -1,
-      });
-
-    res.status(200).json({
-      success: true,
-      count: media.length,
-      media,
-    });
-
-  });
-
-
-
-
-
-export const getSingleMedia =
-  asyncHandler(async (req, res) => {
-
-    const media =
-      await Media.findById(
-        req.params.id
+    const result =
+      await cloudinary.uploader.upload(
+        `data:${file.mimetype};base64,${file.buffer.toString(
+          "base64"
+        )}`,
+        {
+          folder:
+            "paint-market/gallery/videos",
+          resource_type: "video",
+        }
       );
+
+    videoUrl = result.secure_url;
+  }
+
+  // ======================================================
+  // CREATE MEDIA DOCUMENT
+  // ======================================================
+
+  const media = await Media.create({
+    title: title.trim(),
+    category: category.trim(),
+    description: description.trim(),
+    images: imageUrls,
+    video: videoUrl,
+  });
+
+  res.status(201).json({
+    success: true,
+    message: "Media uploaded successfully",
+    media,
+  });
+});
+
+
+// ======================================================
+// GET ALL MEDIA
+// ======================================================
+
+export const getMedia = asyncHandler(async (req, res) => {
+  const media = await Media.find().sort({
+    createdAt: -1,
+  });
+
+  res.status(200).json({
+    success: true,
+    count: media.length,
+    media,
+  });
+});
+
+
+// ======================================================
+// GET SINGLE MEDIA
+// ======================================================
+
+export const getSingleMedia = asyncHandler(
+  async (req, res) => {
+    const media = await Media.findById(
+      req.params.id
+    );
 
     if (!media) {
       return res.status(404).json({
         success: false,
-        message:
-          "Media not found",
+        message: "Media not found",
       });
     }
 
@@ -124,178 +133,185 @@ export const getSingleMedia =
       success: true,
       media,
     });
-
-  });
-
-
+  }
+);
 
 
+// ======================================================
+// UPDATE MEDIA
+// ======================================================
 
-export const updateMedia =
-  asyncHandler(async (req, res) => {
+export const updateMedia = asyncHandler(async (req, res) => {
+  const media = await Media.findById(
+    req.params.id
+  );
 
-    const media =
-      await Media.findById(
-        req.params.id
-      );
+  if (!media) {
+    return res.status(404).json({
+      success: false,
+      message: "Media not found",
+    });
+  }
 
-    if (!media) {
-      return res.status(404).json({
-        success: false,
-        message:
-          "Media not found",
-      });
-    }
+  // ======================================================
+  // UPDATE TEXT FIELDS
+  // ======================================================
 
-    media.title =
-      req.body.title ||
-      media.title;
+  if (req.body.title) {
+    media.title = req.body.title.trim();
+  }
 
+  if (req.body.category) {
+    media.category = req.body.category.trim();
+  } else if (!media.category) {
+    // Gives old records a category
+    media.category = "General Training";
+  }
+
+  if (req.body.description) {
     media.description =
-      req.body.description ||
-      media.description;
+      req.body.description.trim();
+  }
 
-    // Replace Images
-    if (
-      req.files?.images &&
-      req.files.images.length > 0
-    ) {
+  // ======================================================
+  // REPLACE IMAGES
+  // ======================================================
 
-      const uploadedImages = [];
+  if (
+    req.files?.images &&
+    req.files.images.length > 0
+  ) {
+    const uploadedImages = [];
 
-      for (const file of req.files.images) {
-
-        const result =
-          await cloudinary.uploader.upload(
-            `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
-            {
-              folder:
-                "paint-market/gallery/images",
-            }
-          );
-
-        uploadedImages.push(
-          result.secure_url
-        );
-      }
-
-      media.images =
-        uploadedImages;
-
-    }
-
-    // Replace Video
-    if (
-      req.files?.video &&
-      req.files.video.length > 0
-    ) {
-
-      const file =
-        req.files.video[0];
-
+    for (const file of req.files.images) {
       const result =
         await cloudinary.uploader.upload(
-          `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+          `data:${file.mimetype};base64,${file.buffer.toString(
+            "base64"
+          )}`,
           {
             folder:
-              "paint-market/gallery/videos",
-            resource_type: "video",
+              "paint-market/gallery/images",
           }
         );
 
-      media.video =
-        result.secure_url;
-
+      uploadedImages.push(
+        result.secure_url
+      );
     }
 
-    await media.save();
+    media.images = uploadedImages;
+  }
 
-    res.status(200).json({
-      success: true,
-      message:
-        "Media updated successfully",
-      media,
-    });
+  // ======================================================
+  // REPLACE VIDEO
+  // ======================================================
 
-  });
+  if (
+    req.files?.video &&
+    req.files.video.length > 0
+  ) {
+    const file = req.files.video[0];
 
-
-
-
-
-export const deleteMedia =
-  asyncHandler(async (req, res) => {
-
-    const media =
-      await Media.findById(
-        req.params.id
+    const result =
+      await cloudinary.uploader.upload(
+        `data:${file.mimetype};base64,${file.buffer.toString(
+          "base64"
+        )}`,
+        {
+          folder:
+            "paint-market/gallery/videos",
+          resource_type: "video",
+        }
       );
 
-    if (!media) {
-      return res.status(404).json({
-        success: false,
-        message:
-          "Media not found",
-      });
-    }
+    media.video = result.secure_url;
+  }
 
-    // Delete Images
-    if (
-      media.images &&
-      media.images.length > 0
-    ) {
+  await media.save();
 
-      for (const image of media.images) {
+  res.status(200).json({
+    success: true,
+    message: "Media updated successfully",
+    media,
+  });
+});
 
-        try {
 
-          const publicId =
-            image
-              .split("/")
-              .slice(-2)
-              .join("/")
-              .split(".")[0];
+// ======================================================
+// DELETE MEDIA
+// ======================================================
 
-          await cloudinary.uploader.destroy(
-            publicId
-          );
+export const deleteMedia = asyncHandler(async (req, res) => {
+  const media = await Media.findById(
+    req.params.id
+  );
 
-        } catch (err) {}
+  if (!media) {
+    return res.status(404).json({
+      success: false,
+      message: "Media not found",
+    });
+  }
 
-      }
+  // ======================================================
+  // DELETE IMAGES FROM CLOUDINARY
+  // ======================================================
 
-    }
-
-    // Delete Video
-    if (media.video) {
-
+  if (
+    media.images &&
+    media.images.length > 0
+  ) {
+    for (const image of media.images) {
       try {
-
         const publicId =
-          media.video
+          image
             .split("/")
             .slice(-2)
             .join("/")
             .split(".")[0];
 
         await cloudinary.uploader.destroy(
-          publicId,
-          {
-            resource_type:
-              "video",
-          }
+          publicId
         );
-
-      } catch (err) {}
-
+      } catch (err) {
+        // Continue deleting other files
+      }
     }
+  }
 
-    await media.deleteOne();
+  // ======================================================
+  // DELETE VIDEO FROM CLOUDINARY
+  // ======================================================
 
-    res.status(200).json({
-      success: true,
-      message:
-        "Media deleted successfully",
-    });
+  if (media.video) {
+    try {
+      const publicId =
+        media.video
+          .split("/")
+          .slice(-2)
+          .join("/")
+          .split(".")[0];
 
+      await cloudinary.uploader.destroy(
+        publicId,
+        {
+          resource_type: "video",
+        }
+      );
+    } catch (err) {
+      // Continue with database deletion
+    }
+  }
+
+  // ======================================================
+  // DELETE DATABASE RECORD
+  // ======================================================
+
+  await media.deleteOne();
+
+  res.status(200).json({
+    success: true,
+    message: "Media deleted successfully",
   });
+});

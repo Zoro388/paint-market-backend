@@ -6,10 +6,7 @@ const mediaUpload = multer({
   storage: memoryStorage,
 
   limits: {
-    fileSize:
-      100 *
-      1024 *
-      1024, // 50MB
+    fileSize: 100 * 1024 * 1024, // 100 MB maximum per file
   },
 });
 

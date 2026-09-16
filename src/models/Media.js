@@ -8,19 +8,25 @@ const mediaSchema = new mongoose.Schema(
       trim: true,
     },
 
+    category: {
+      type: String,
+      required: true,
+      trim: true,
+      default: "General Training",
+    },
+
     description: {
       type: String,
       required: true,
+      trim: true,
     },
 
     images: {
       type: [String],
       default: [],
       validate: {
-        validator: (value) =>
-          value.length <= 5,
-        message:
-          "Maximum of 5 images allowed",
+        validator: (value) => value.length <= 5,
+        message: "Maximum of 5 images allowed",
       },
     },
 
@@ -34,7 +40,4 @@ const mediaSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model(
-  "Media",
-  mediaSchema
-);
+export default mongoose.model("Media", mediaSchema);

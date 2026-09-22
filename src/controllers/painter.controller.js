@@ -1614,51 +1614,46 @@ export const getPublicPainters =
 asyncHandler(async (req, res) => {
 
     const painters =
-await PainterProfile.find({
+    await PainterProfile.find({
 
-    approvalStatus: "approved",
+        approvalStatus: "approved",
 
-    status: "active",
+        status: "active",
 
-})
+    })
+    .populate({
 
-.populate({
+        path: "user",
 
-    path: "user",
+        select: "firstName lastName",
 
-    select: "firstName lastName",
+    })
+    .populate({
 
-})
+        path: "skills",
 
-.populate({
+        select: "name type",
 
-    path: "skills",
+    })
+    .populate({
 
-    select: "name type",
+        path: "services",
 
-})
+        select: "name type",
 
-.populate({
+    })
+    .populate({
 
-    path: "services",
+        path: "preferredBrands",
 
-    select: "name type",
+        select: "name type",
 
-})
+    })
+    .sort({
 
-.populate({
+        createdAt: -1,
 
-    path: "preferredBrands",
-
-    select: "name type",
-
-})
-
-.sort({
-
-    createdAt: -1,
-
-});
+    });
 
     const formattedPainters =
     await Promise.all(
@@ -1722,6 +1717,10 @@ await PainterProfile.find({
 
                 preferredBrands:
                 painter.preferredBrands,
+
+                // Painter portfolio
+                portfolioImages:
+                painter.portfolioImages || [],
 
                 averageRating:
                 Number(

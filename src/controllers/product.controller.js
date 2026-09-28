@@ -401,17 +401,13 @@ const uploadImage = async (file) => {
 |--------------------------------------------------------------------------
 */
 
-export const createProduct =
-asyncHandler(async (req, res) => {
-
+export const createProduct = asyncHandler(async (req, res) => {
   console.log("========== CREATE PRODUCT ==========");
-
   console.log("BODY:");
   console.log(req.body);
-
   console.log("FILES:");
   console.log(
-    req.files?.map(file => ({
+    req.files?.map((file) => ({
       fieldname: file.fieldname,
       originalname: file.originalname,
     }))
@@ -419,204 +415,203 @@ asyncHandler(async (req, res) => {
 
   /*
   |--------------------------------------------------------------------------
-  | Validate Bucket Image
+  | Validate bucket image
   |--------------------------------------------------------------------------
   */
 
-  if (!req.files || req.files.length === 0) {
+  const bucketFile = req.files?.find(
+    (file) => file.fieldname === "productImages"
+  );
 
+  if (!bucketFile) {
     return res.status(400).json({
       success: false,
       message: "Please upload the bucket image.",
     });
-
   }
 
   /*
   |--------------------------------------------------------------------------
-  | Upload Bucket Image
+  | Upload bucket image
   |--------------------------------------------------------------------------
   */
 
-  const bucketImage =
-    await uploadImage(req.files[0]);
+  const bucketImage = await uploadImage(bucketFile);
 
-  const bucketImages = [
-    bucketImage.url,
-  ];
+  const bucketImages = [bucketImage.url];
 
   /*
   |--------------------------------------------------------------------------
-  | Questions
+  | Parse questions
   |--------------------------------------------------------------------------
   */
 
   let questions = [];
 
   if (req.body.questions) {
-
-    questions =
-      JSON.parse(req.body.questions);
-
+    try {
+      questions = JSON.parse(req.body.questions);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid questions JSON.",
+      });
+    }
   }
 
   /*
   |--------------------------------------------------------------------------
-  | Product Features
+  | Parse product features
   |--------------------------------------------------------------------------
   */
 
   let productFeatures = [];
 
   if (req.body.productFeatures) {
-
-    productFeatures =
-      JSON.parse(req.body.productFeatures);
-
+    try {
+      productFeatures = JSON.parse(req.body.productFeatures);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid productFeatures JSON.",
+      });
+    }
   }
 
   /*
   |--------------------------------------------------------------------------
-  | Variants (Optional)
+  | Parse variants
   |--------------------------------------------------------------------------
+  */
+
+  let variants = [];
+
+  if (req.body.variants) {
+    try {
+      variants = JSON.parse(req.body.variants);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid variants JSON.",
+      });
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Upload variant images
+  |--------------------------------------------------------------------------
+  |
+  | Variant image field names from frontend:
+  |
+  | variantImage_new_0
+  | variantImage_new_1
+  | variantImage_<existing-id>
+  |
   */
 
   const uploadedVariants = [];
 
-  if (req.body.variants) {
+  for (let i = 0; i < variants.length; i++) {
+    const variant = variants[i];
 
-    const variants =
-      JSON.parse(req.body.variants);
+    let variantImageFile = null;
 
     /*
-    |--------------------------------------------------------------------------
-    | Validate Variant Images
-    |--------------------------------------------------------------------------
-    */
+     * Existing variant
+     */
+    if (variant._id) {
+      variantImageFile = req.files?.find(
+        (file) => file.fieldname === `variantImage_${variant._id}`
+      );
+    }
 
-    if (
-      req.files.length - 1 !==
-      variants.length
-    ) {
+    /*
+     * New variant
+     */
+    if (!variant._id) {
+      variantImageFile = req.files?.find(
+        (file) => file.fieldname === `variantImage_new_${i}`
+      );
+    }
 
+    let image = undefined;
+
+    /*
+     * Variant image is optional
+     */
+    if (variantImageFile) {
+      const uploadedImage = await uploadImage(variantImageFile);
+
+      image = {
+        url: uploadedImage.url,
+        publicId: uploadedImage.publicId,
+      };
+    }
+
+    /*
+     * The schema currently requires an image object.
+     * Therefore, if no image was uploaded, do not create
+     * the variant with a missing image.
+     */
+    if (!image) {
       return res.status(400).json({
-
         success: false,
-
-        message:
-          `Expected ${variants.length} colour image(s) but received ${req.files.length - 1}.`,
-
+        message: `Please upload an image for the "${variant.colourName}" colour variant.`,
       });
-
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Upload Variant Images
-    |--------------------------------------------------------------------------
-    */
-
-    for (
-      let i = 0;
-      i < variants.length;
-      i++
-    ) {
-
-      const uploadedImage =
-        await uploadImage(
-          req.files[i + 1]
-        );
-
-      uploadedVariants.push({
-
-        colourName:
-          variants[i].colourName,
-
-        colourCode:
-          variants[i].colourCode,
-
-        image: {
-
-          url:
-            uploadedImage.url,
-
-          publicId:
-            uploadedImage.publicId,
-
-        },
-
-      });
-
-    }
-
+    uploadedVariants.push({
+      colourName: variant.colourName,
+      colourCode: variant.colourCode,
+      image,
+    });
   }
 
   /*
   |--------------------------------------------------------------------------
-  | Create Product
+  | Create product
   |--------------------------------------------------------------------------
   */
-console.log("========== PRODUCT TO CREATE ==========");
-console.dir(
-{
-  productName: req.body.productName,
-  productCategory: req.body.productCategory,
-  productDescription: req.body.productDescription,
-  price: Number(req.body.price),
-  coverageInformation: req.body.coverageInformation,
-  productFeatures,
-  questions,
-  status: req.body.status,
-  productImages: bucketImages,
-  variants: uploadedVariants,
-},
-{ depth: null }
-);
-  const product =
-    await Product.create({
 
-      productName:
-        req.body.productName,
+  console.log("========== PRODUCT TO CREATE ==========");
 
-      productCategory:
-        req.body.productCategory,
-
-      productDescription:
-        req.body.productDescription,
-
-      price:
-        Number(req.body.price),
-
-      coverageInformation:
-        req.body.coverageInformation,
-
+  console.dir(
+    {
+      productName: req.body.productName,
+      productCategory: req.body.productCategory,
+      productDescription: req.body.productDescription,
+      price: Number(req.body.price),
+      coverageInformation: req.body.coverageInformation,
       productFeatures,
-
       questions,
+      status: req.body.status,
+      productImages: bucketImages,
+      variants: uploadedVariants,
+    },
+    { depth: null }
+  );
 
-      status:
-        req.body.status,
-
-      productImages:
-        bucketImages,
-
-      variants:
-        uploadedVariants,
-
-    });
-
-  return res.status(201).json({
-
-    success: true,
-
-    message:
-      "Product created successfully.",
-
-    product,
-
+  const product = await Product.create({
+    productName: req.body.productName,
+    productCategory: req.body.productCategory,
+    productDescription: req.body.productDescription,
+    price: Number(req.body.price),
+    coverageInformation: req.body.coverageInformation,
+    productFeatures,
+    questions,
+    status: req.body.status,
+    productImages: bucketImages,
+    variants: uploadedVariants,
   });
 
+  return res.status(201).json({
+    success: true,
+    message: "Product created successfully.",
+    product,
+  });
 });
+
 
 /*
 |--------------------------------------------------------------------------

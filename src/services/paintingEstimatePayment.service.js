@@ -8,7 +8,7 @@ const flutterwave = axios.create({
   },
 });
 
-export const PAINTING_ESTIMATE_UNLOCK_FEE = 3999;
+export const PAINTING_ESTIMATE_UNLOCK_FEE = 50;
 
 export const initializePaintingEstimatePayment = async ({
   estimateId,

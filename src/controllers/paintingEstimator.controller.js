@@ -276,7 +276,7 @@ export const createPaintingEstimate =
           specification:
             calculation.specification,
 
-          unlockFee: 3999,
+          unlockFee: 50,
           currency: "NGN",
 
           paymentStatus: "pending",

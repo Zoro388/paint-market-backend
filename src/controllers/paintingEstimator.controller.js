@@ -11,7 +11,6 @@ import {
   verifyPaintingEstimatePayment,
 } from "../services/paintingEstimatePayment.service.js";
 
-
 /*
 |--------------------------------------------------------------------------
 | Helpers
@@ -24,42 +23,13 @@ const cleanString = (value) => {
     : "";
 };
 
-
 const validateEmail = (email) => {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-    email,
-  );
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 };
 
-
-const publicEstimateFields = {
-  fullName: 1,
-  phoneNumber: 1,
-  email: 1,
-  buildingType: 1,
-  bedrooms: 1,
-  area: 1,
-  paintType: 1,
-  finishLevel: 1,
-  location: 1,
-  extras: 1,
-  paintQuantity: 1,
-  bucketQuantity: 1,
-  litresPerBucket: 1,
-  materialCost: 1,
-  labourCost: 1,
-  extrasCost: 1,
-  estimatedBudget: 1,
-  lowEstimate: 1,
-  highEstimate: 1,
-  specification: 1,
-  currency: 1,
-  paymentStatus: 1,
-  estimateStatus: 1,
-  paidAt: 1,
-  createdAt: 1,
+const escapeRegex = (value) => {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 };
-
 
 /*
 |--------------------------------------------------------------------------
@@ -78,22 +48,12 @@ const publicEstimateFields = {
 |--------------------------------------------------------------------------
 */
 
-const escapeRegex = (value) => {
-  return value.replace(
-    /[.*+?^${}()|[\]\\]/g,
-    "\\$&",
-  );
-};
-
-
 const getPainterStateRegex = (state) => {
-  const normalizedState = cleanString(
-    state,
-  );
+  const normalizedState = cleanString(state);
 
   if (
     normalizedState.toLowerCase() ===
-    "fct - abuja".toLowerCase()
+    "fct - abuja"
   ) {
     return /^(FCT\s*-\s*Abuja|Abuja|FCT|Federal Capital Territory)$/i;
   }
@@ -103,7 +63,6 @@ const getPainterStateRegex = (state) => {
     "i",
   );
 };
-
 
 /*
 |--------------------------------------------------------------------------
@@ -128,7 +87,6 @@ export const createPaintingEstimate = async (
       extras,
     } = req.body;
 
-
     const cleanedFullName =
       cleanString(fullName);
 
@@ -149,7 +107,6 @@ export const createPaintingEstimate = async (
 
     const cleanedLocation =
       cleanString(location);
-
 
     /*
     |--------------------------------------------------------------------------
@@ -174,7 +131,6 @@ export const createPaintingEstimate = async (
       });
     }
 
-
     if (!validateEmail(cleanedEmail)) {
       return res.status(400).json({
         success: false,
@@ -183,6 +139,22 @@ export const createPaintingEstimate = async (
       });
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Normalize extras
+    |--------------------------------------------------------------------------
+    */
+
+    let normalizedExtras =
+      Array.isArray(extras)
+        ? extras.filter(Boolean)
+        : [];
+
+    if (
+      normalizedExtras.includes("None")
+    ) {
+      normalizedExtras = ["None"];
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -198,30 +170,8 @@ export const createPaintingEstimate = async (
         location:
           cleanedLocation,
         extras:
-          Array.isArray(extras)
-            ? extras
-            : [],
+          normalizedExtras,
       });
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Normalize extras
-    |--------------------------------------------------------------------------
-    */
-
-    let normalizedExtras =
-      Array.isArray(extras)
-        ? extras.filter(Boolean)
-        : [];
-
-
-    if (
-      normalizedExtras.includes("None")
-    ) {
-      normalizedExtras = ["None"];
-    }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -279,13 +229,12 @@ export const createPaintingEstimate = async (
           "created",
       });
 
-
     /*
     |--------------------------------------------------------------------------
     | Return locked estimate information
     |--------------------------------------------------------------------------
     |
-    | Financial details are NOT returned before payment.
+    | Do not expose the actual project pricing before payment.
     |--------------------------------------------------------------------------
     */
 
@@ -358,7 +307,6 @@ export const createPaintingEstimate = async (
   }
 };
 
-
 /*
 |--------------------------------------------------------------------------
 | INITIALIZE PAINTING ESTIMATE PAYMENT
@@ -376,7 +324,6 @@ export const initializePaintingEstimate =
           req.params.id,
         );
 
-
       if (!estimate) {
         return res.status(404).json({
           success: false,
@@ -384,7 +331,6 @@ export const initializePaintingEstimate =
             "Painting estimate not found.",
         });
       }
-
 
       /*
       |--------------------------------------------------------------------------
@@ -403,7 +349,6 @@ export const initializePaintingEstimate =
             "This estimate has already been paid.",
         });
       }
-
 
       /*
       |--------------------------------------------------------------------------
@@ -426,7 +371,6 @@ export const initializePaintingEstimate =
             estimate.phoneNumber,
         });
 
-
       /*
       |--------------------------------------------------------------------------
       | Store transaction reference
@@ -440,7 +384,6 @@ export const initializePaintingEstimate =
         "pending";
 
       await estimate.save();
-
 
       return res.json({
         success: true,
@@ -463,7 +406,6 @@ export const initializePaintingEstimate =
     }
   };
 
-
 /*
 |--------------------------------------------------------------------------
 | VERIFY PAINTING ESTIMATE PAYMENT
@@ -480,7 +422,6 @@ export const verifyPaintingEstimate =
         transactionId,
       } = req.body;
 
-
       if (!transactionId) {
         return res.status(400).json({
           success: false,
@@ -489,12 +430,10 @@ export const verifyPaintingEstimate =
         });
       }
 
-
       const estimate =
         await PaintingEstimate.findById(
           req.params.id,
         );
-
 
       if (!estimate) {
         return res.status(404).json({
@@ -503,7 +442,6 @@ export const verifyPaintingEstimate =
             "Painting estimate not found.",
         });
       }
-
 
       /*
       |--------------------------------------------------------------------------
@@ -522,7 +460,6 @@ export const verifyPaintingEstimate =
         });
       }
 
-
       /*
       |--------------------------------------------------------------------------
       | Verify transaction directly with Flutterwave
@@ -534,33 +471,25 @@ export const verifyPaintingEstimate =
           transactionId,
         );
 
-
       const expectedReference =
         estimate.paymentReference;
-
 
       const validStatus =
         transaction.status ===
         "successful";
 
-
       const validReference =
         transaction.tx_ref ===
         expectedReference;
-
 
       const validCurrency =
         String(
           transaction.currency || "",
         ).toUpperCase() === "NGN";
 
-
       /*
       |--------------------------------------------------------------------------
-      | Require the exact unlock fee
-      |--------------------------------------------------------------------------
-      |
-      | Do not accept a transaction merely because it is larger.
+      | Require exact unlock fee
       |--------------------------------------------------------------------------
       */
 
@@ -569,7 +498,6 @@ export const verifyPaintingEstimate =
         Number(
           PAINTING_ESTIMATE_UNLOCK_FEE,
         );
-
 
       if (
         !validStatus ||
@@ -590,7 +518,6 @@ export const verifyPaintingEstimate =
         });
       }
 
-
       /*
       |--------------------------------------------------------------------------
       | Mark estimate as paid
@@ -609,17 +536,13 @@ export const verifyPaintingEstimate =
       estimate.paidAt =
         new Date();
 
-
       await estimate.save();
-
 
       return res.json({
         success: true,
         paid: true,
-
         message:
           "Payment verified successfully.",
-
         estimate,
       });
     } catch (error) {
@@ -638,7 +561,6 @@ export const verifyPaintingEstimate =
       });
     }
   };
-
 
 /*
 |--------------------------------------------------------------------------
@@ -662,10 +584,7 @@ export const getPaintingEstimate =
       const estimate =
         await PaintingEstimate.findById(
           req.params.id,
-        ).select(
-          publicEstimateFields,
         );
-
 
       if (!estimate) {
         return res.status(404).json({
@@ -675,11 +594,9 @@ export const getPaintingEstimate =
         });
       }
 
-
       const isPaid =
         estimate.paymentStatus ===
         "paid";
-
 
       /*
       |--------------------------------------------------------------------------
@@ -695,10 +612,13 @@ export const getPaintingEstimate =
         });
       }
 
-
       /*
       |--------------------------------------------------------------------------
       | Locked estimate
+      |--------------------------------------------------------------------------
+      |
+      | Do not expose pricing, labour, materials,
+      | paint quantities or budget before payment.
       |--------------------------------------------------------------------------
       */
 
@@ -762,7 +682,6 @@ export const getPaintingEstimate =
     }
   };
 
-
 /*
 |--------------------------------------------------------------------------
 | GET APPROVED PAINTERS FOR PAID ESTIMATE
@@ -790,7 +709,6 @@ export const getPaintingEstimatePainters =
           "paymentStatus location",
         );
 
-
       if (!estimate) {
         return res.status(404).json({
           success: false,
@@ -798,7 +716,6 @@ export const getPaintingEstimatePainters =
             "Painting estimate not found.",
         });
       }
-
 
       /*
       |--------------------------------------------------------------------------
@@ -817,12 +734,10 @@ export const getPaintingEstimatePainters =
         });
       }
 
-
       const stateRegex =
         getPainterStateRegex(
           estimate.location,
         );
-
 
       /*
       |--------------------------------------------------------------------------
@@ -853,7 +768,6 @@ export const getPaintingEstimatePainters =
             completedJobs: -1,
             approvedAt: -1,
           });
-
 
       /*
       |--------------------------------------------------------------------------
@@ -935,7 +849,6 @@ export const getPaintingEstimatePainters =
           }),
         );
 
-
       return res.json({
         success: true,
 
@@ -962,14 +875,13 @@ export const getPaintingEstimatePainters =
     }
   };
 
-
 /*
 |--------------------------------------------------------------------------
 | ADMIN - GET PAINTING ESTIMATES
 |--------------------------------------------------------------------------
 |
-| This endpoint is kept because your existing dashboard work will use it
-| later. We are NOT connecting it to the dashboard yet.
+| This endpoint is kept for later dashboard work.
+| We are NOT connecting it to the dashboard now.
 |--------------------------------------------------------------------------
 */
 
@@ -987,7 +899,6 @@ export const getAdminPaintingEstimates =
           1,
         );
 
-
       const limit =
         Math.min(
           Math.max(
@@ -999,25 +910,20 @@ export const getAdminPaintingEstimates =
           100,
         );
 
-
       const skip =
         (page - 1) * limit;
 
-
       const filter = {};
-
 
       if (req.query.status) {
         filter.paymentStatus =
           req.query.status;
       }
 
-
       if (req.query.state) {
         filter.location =
           req.query.state;
       }
-
 
       const [
         estimates,
@@ -1039,7 +945,6 @@ export const getAdminPaintingEstimates =
           ),
         ]);
 
-
       return res.json({
         success: true,
 
@@ -1049,7 +954,6 @@ export const getAdminPaintingEstimates =
           page,
           limit,
           total,
-
           pages:
             Math.ceil(
               total / limit,

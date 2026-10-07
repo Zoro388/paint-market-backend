@@ -143,7 +143,7 @@ const paintingEstimateSchema = new mongoose.Schema(
     // Payment
     unlockFee: {
       type: Number,
-      default: 3999,
+      default: 50,
     },
 
     currency: {

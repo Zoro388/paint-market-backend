@@ -32,6 +32,7 @@ import reviewRoutes from "./routes/review.routes.js";
 import heroSliderRoutes from "./routes/heroSlider.routes.js";
 import checkoutRoutes from "./routes/checkout.routes.js";
 import frontendPaymentRoutes from "./routes/frontendPayment.routes.js";
+// import paintingEstimatorRoutes from "./routes/paintingEstimator.routes.js";
 import paintingEstimatorRoutes from "./routes/paintingEstimator.routes.js";
 
 /*
@@ -184,7 +185,7 @@ app.use(
 
 app.use(
   "/api/painting-estimator",
-  paintingEstimatorRoutes,
+  paintingEstimatorRoutes
 );
 
 

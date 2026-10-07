@@ -2,17 +2,21 @@ import express from "express";
 
 import {
   createPaintingEstimate,
+  initializePaintingEstimate,
+  verifyPaintingEstimate,
   getPaintingEstimate,
-  initializePaintingEstimatePaymentController,
-  verifyPaintingEstimatePaymentController,
+  getPaintingEstimatePainters,
+  getAdminPaintingEstimates,
 } from "../controllers/paintingEstimator.controller.js";
 
 const router = express.Router();
 
 
-// --------------------------------------
-// Create painting estimate
-// --------------------------------------
+/*
+|--------------------------------------------------------------------------
+| CREATE PAINTING ESTIMATE
+|--------------------------------------------------------------------------
+*/
 
 router.post(
   "/",
@@ -20,33 +24,70 @@ router.post(
 );
 
 
-// --------------------------------------
-// Initialize Flutterwave payment
-// --------------------------------------
+/*
+|--------------------------------------------------------------------------
+| INITIALIZE FLUTTERWAVE PAYMENT
+|--------------------------------------------------------------------------
+*/
 
 router.post(
   "/:id/payment",
-  initializePaintingEstimatePaymentController,
+  initializePaintingEstimate,
 );
 
 
-// --------------------------------------
-// Verify Flutterwave payment
-// --------------------------------------
+/*
+|--------------------------------------------------------------------------
+| VERIFY FLUTTERWAVE PAYMENT
+|--------------------------------------------------------------------------
+*/
 
 router.post(
   "/:id/verify-payment",
-  verifyPaintingEstimatePaymentController,
+  verifyPaintingEstimate,
 );
 
 
-// --------------------------------------
-// Get painting estimate
-// --------------------------------------
+/*
+|--------------------------------------------------------------------------
+| GET APPROVED PAINTERS
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+| This route must be BEFORE /:id.
+|
+*/
+
+router.get(
+  "/:id/painters",
+  getPaintingEstimatePainters,
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| GET PAINTING ESTIMATE
+|--------------------------------------------------------------------------
+*/
 
 router.get(
   "/:id",
   getPaintingEstimate,
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| ADMIN ESTIMATES
+|--------------------------------------------------------------------------
+|
+| Dashboard integration will be handled later.
+|
+*/
+
+router.get(
+  "/admin/all",
+  getAdminPaintingEstimates,
 );
 
 

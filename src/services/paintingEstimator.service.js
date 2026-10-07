@@ -25,32 +25,55 @@ const FINISH_MULTIPLIERS = {
   "High-End": 1.55,
 };
 
-const LOCATION_MULTIPLIERS = {
-  "Lagos Mainland": 1,
-
-  "Lagos Mainland — Premium Areas": 1.15,
-
-  "Lekki / Ajah / Sangotedo": 1.2,
-
-  "Victoria Island / Ikoyi": 1.3,
-
-  Abuja: 1.15,
-
-  "Other Nigerian City": 1,
+const STATE_MULTIPLIERS = {
+  Abia: 1,
+  Adamawa: 1,
+  "Akwa Ibom": 1.05,
+  Anambra: 1.05,
+  Bauchi: 0.95,
+  Bayelsa: 1.05,
+  Benue: 0.95,
+  Borno: 0.95,
+  "Cross River": 1.05,
+  Delta: 1.05,
+  Ebonyi: 0.95,
+  Edo: 1.05,
+  Ekiti: 0.95,
+  Enugu: 1.05,
+  "FCT - Abuja": 1.15,
+  Gombe: 0.95,
+  Imo: 1,
+  Jigawa: 0.95,
+  Kaduna: 1,
+  Kano: 1,
+  Katsina: 0.95,
+  Kebbi: 0.95,
+  Kogi: 0.95,
+  Kwara: 1,
+  Lagos: 1.2,
+  Nasarawa: 1.05,
+  Niger: 1,
+  Ogun: 1.1,
+  Ondo: 1,
+  Osun: 0.95,
+  Oyo: 1,
+  Plateau: 1,
+  Rivers: 1.1,
+  Sokoto: 0.95,
+  Taraba: 0.95,
+  Yobe: 0.95,
+  Zamfara: 0.95,
 };
 
 const MATERIAL_RATE_PER_SQM = 1800;
 const LABOUR_RATE_PER_SQM = 1100;
-
 const LITRES_PER_BUCKET = 20;
 
 export const getAreaFromBedrooms = (bedrooms) => {
   const area = BEDROOM_AREAS[Number(bedrooms)];
 
   if (!area) {
-    throw new Error(
-      "Invalid bedroom selection.",
-    );
+    throw new Error("Invalid bedroom selection.");
   }
 
   return area;
@@ -67,21 +90,15 @@ export const calculatePaintingEstimate = ({
   const finishMultiplier =
     FINISH_MULTIPLIERS[finishLevel];
 
-  const locationMultiplier =
-    LOCATION_MULTIPLIERS[location];
+  const stateMultiplier =
+    STATE_MULTIPLIERS[location];
 
   if (!finishMultiplier) {
-    throw new Error(
-      "Invalid finishing level.",
-    );
+    throw new Error("Invalid finishing level.");
   }
 
-  if (
-    typeof locationMultiplier !== "number"
-  ) {
-    throw new Error(
-      "Invalid project location.",
-    );
+  if (typeof stateMultiplier !== "number") {
+    throw new Error("Invalid project state.");
   }
 
   const normalizedExtras = Array.isArray(extras)
@@ -89,12 +106,8 @@ export const calculatePaintingEstimate = ({
     : [];
 
   const extrasCost = normalizedExtras.reduce(
-    (total, extra) => {
-      return (
-        total +
-        (EXTRA_RATES[extra] || 0)
-      );
-    },
+    (total, extra) =>
+      total + (EXTRA_RATES[extra] || 0),
     0,
   );
 
@@ -102,21 +115,15 @@ export const calculatePaintingEstimate = ({
     area *
     MATERIAL_RATE_PER_SQM *
     finishMultiplier *
-    locationMultiplier;
+    stateMultiplier;
 
   const labourCost =
     area *
     LABOUR_RATE_PER_SQM *
     finishMultiplier *
-    locationMultiplier;
+    stateMultiplier;
 
-  // Temporary calculation.
-  // This will be replaced once the final
-  // PaintMarket calculation specification
-  // is supplied.
-  const paintQuantity = Math.ceil(
-    area / 10,
-  );
+  const paintQuantity = Math.ceil(area / 10);
 
   const bucketQuantity = Math.ceil(
     paintQuantity / LITRES_PER_BUCKET,
@@ -136,19 +143,24 @@ export const calculatePaintingEstimate = ({
     estimatedBudget * 1.15,
   );
 
-  const specification =
-    finishLevel === "High-End"
-      ? "Premium paints, extensive surface preparation, feature finishes and higher-quality coatings."
-      : finishLevel === "Mid-Range"
-        ? "Better-quality paint, improved surface preparation and refined interior finishing."
-        : "Standard emulsion paint with basic surface preparation and a practical finish.";
+  let specification =
+    "Standard emulsion paint with basic surface preparation and a practical finish.";
+
+  if (finishLevel === "Mid-Range") {
+    specification =
+      "Better-quality paint, improved surface preparation and refined interior finishing.";
+  }
+
+  if (finishLevel === "High-End") {
+    specification =
+      "Premium paints, extensive surface preparation, feature finishes and higher-quality coatings.";
+  }
 
   return {
     area,
     paintQuantity,
     bucketQuantity,
-    litresPerBucket:
-      LITRES_PER_BUCKET,
+    litresPerBucket: LITRES_PER_BUCKET,
     materialCost: Math.round(materialCost),
     labourCost: Math.round(labourCost),
     extrasCost: Math.round(extrasCost),

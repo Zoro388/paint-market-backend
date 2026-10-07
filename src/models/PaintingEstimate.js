@@ -1,8 +1,47 @@
 import mongoose from "mongoose";
 
-const paintingEstimateSchema = new mongoose.Schema(
+const NIGERIAN_STATES = [
+  "Abia",
+  "Adamawa",
+  "Akwa Ibom",
+  "Anambra",
+  "Bauchi",
+  "Bayelsa",
+  "Benue",
+  "Borno",
+  "Cross River",
+  "Delta",
+  "Ebonyi",
+  "Edo",
+  "Ekiti",
+  "Enugu",
+  "FCT - Abuja",
+  "Gombe",
+  "Imo",
+  "Jigawa",
+  "Kaduna",
+  "Kano",
+  "Katsina",
+  "Kebbi",
+  "Kogi",
+  "Kwara",
+  "Lagos",
+  "Nasarawa",
+  "Niger",
+  "Ogun",
+  "Ondo",
+  "Osun",
+  "Oyo",
+  "Plateau",
+  "Rivers",
+  "Sokoto",
+  "Taraba",
+  "Yobe",
+  "Zamfara",
+];
+
+const PaintingEstimateSchema = new mongoose.Schema(
   {
-    // Customer information
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -28,60 +67,39 @@ const paintingEstimateSchema = new mongoose.Schema(
       lowercase: true,
     },
 
-    // Project selections
     buildingType: {
       type: String,
+      enum: ["Bungalow", "Duplex", "Block of Flats"],
       required: true,
-      enum: [
-        "Bungalow",
-        "Duplex",
-        "Block of Flats",
-      ],
     },
 
     bedrooms: {
       type: Number,
-      required: true,
       enum: [2, 3, 4, 5, 6],
+      required: true,
     },
 
     area: {
       type: Number,
       required: true,
-      min: 1,
     },
 
     paintType: {
       type: String,
+      enum: ["Matt", "Trowel", "Satin"],
       required: true,
-      enum: [
-        "Matt",
-        "Trowel",
-        "Satin",
-      ],
     },
 
     finishLevel: {
       type: String,
+      enum: ["Budget", "Mid-Range", "High-End"],
       required: true,
-      enum: [
-        "Budget",
-        "Mid-Range",
-        "High-End",
-      ],
     },
 
     location: {
       type: String,
+      enum: NIGERIAN_STATES,
       required: true,
-      enum: [
-        "Lagos Mainland",
-        "Lagos Mainland — Premium Areas",
-        "Lekki / Ajah / Sangotedo",
-        "Victoria Island / Ikoyi",
-        "Abuja",
-        "Other Nigerian City",
-      ],
     },
 
     extras: {
@@ -89,7 +107,6 @@ const paintingEstimateSchema = new mongoose.Schema(
       default: [],
     },
 
-    // Calculation snapshot
     paintQuantity: {
       type: Number,
       default: 0,
@@ -140,7 +157,6 @@ const paintingEstimateSchema = new mongoose.Schema(
       default: "",
     },
 
-    // Payment
     unlockFee: {
       type: Number,
       default: 50,
@@ -153,20 +169,19 @@ const paintingEstimateSchema = new mongoose.Schema(
 
     paymentReference: {
       type: String,
-      default: null,
+      default: "",
       index: true,
+    },
+
+    paymentTransactionId: {
+      type: String,
+      default: "",
     },
 
     paymentStatus: {
       type: String,
-      enum: [
-        "pending",
-        "paid",
-        "failed",
-        "refunded",
-      ],
+      enum: ["pending", "paid", "failed", "refunded"],
       default: "pending",
-      index: true,
     },
 
     paidAt: {
@@ -174,16 +189,10 @@ const paintingEstimateSchema = new mongoose.Schema(
       default: null,
     },
 
-    // Estimate lifecycle
     estimateStatus: {
       type: String,
-      enum: [
-        "created",
-        "paid",
-        "cancelled",
-      ],
+      enum: ["created", "paid", "cancelled"],
       default: "created",
-      index: true,
     },
   },
   {
@@ -191,12 +200,19 @@ const paintingEstimateSchema = new mongoose.Schema(
   },
 );
 
-paintingEstimateSchema.index({
+PaintingEstimateSchema.index({
   email: 1,
+  createdAt: -1,
+});
+
+PaintingEstimateSchema.index({
+  location: 1,
   createdAt: -1,
 });
 
 export default mongoose.model(
   "PaintingEstimate",
-  paintingEstimateSchema,
+  PaintingEstimateSchema,
 );
+
+export { NIGERIAN_STATES };

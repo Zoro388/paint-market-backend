@@ -10,69 +10,80 @@ const flutterwave = axios.create({
 
 export const PAINTING_ESTIMATE_UNLOCK_FEE = 50;
 
-export const initializePaintingEstimatePayment = async ({
-  estimateId,
-  email,
-  fullName,
-  phoneNumber,
-}) => {
-  const txRef = `paint_estimate_${estimateId}_${Date.now()}`;
+export const initializePaintingEstimatePayment =
+  async ({
+    estimateId,
+    email,
+    fullName,
+    phoneNumber,
+  }) => {
+    const txRef =
+      `paint_estimate_${estimateId}_${Date.now()}`;
 
-  const response = await flutterwave.post("/payments", {
-    tx_ref: txRef,
+    const response =
+      await flutterwave.post(
+        "/payments",
+        {
+          tx_ref: txRef,
+          amount:
+            PAINTING_ESTIMATE_UNLOCK_FEE,
+          currency: "NGN",
 
-    amount: PAINTING_ESTIMATE_UNLOCK_FEE,
+          redirect_url:
+            process.env
+              .PAINTING_ESTIMATE_PAYMENT_REDIRECT_URL,
 
-    currency: "NGN",
+          payment_options:
+            "card,banktransfer,ussd",
 
-    redirect_url:
-      process.env.PAINTING_ESTIMATE_PAYMENT_REDIRECT_URL,
+          customer: {
+            email,
+            name: fullName,
+            phonenumber: phoneNumber,
+          },
 
-    payment_options:
-      "card,banktransfer,ussd",
+          customizations: {
+            title:
+              "PaintMarket Painting Estimate",
 
-    customer: {
-      email,
-      name: fullName,
-      phonenumber: phoneNumber,
-    },
+            description:
+              "Unlock your detailed painting project estimate",
 
-    customizations: {
-      title: "PaintMarket Painting Estimate",
-      description:
-        "Unlock your detailed painting project estimate",
-      logo:
-        process.env.PAINTMARKET_LOGO_URL || undefined,
-    },
+            logo:
+              process.env
+                .PAINTMARKET_LOGO_URL ||
+              undefined,
+          },
 
-    meta: {
-      type: "painting_estimate",
-      estimateId: String(estimateId),
-    },
-  });
+          meta: {
+            type: "painting_estimate",
+            estimateId:
+              String(estimateId),
+          },
+        },
+      );
 
-  if (
-    !response.data ||
-    response.data.status !== "success"
-  ) {
-    throw new Error(
-      response.data?.message ||
-        "Unable to initialize Flutterwave payment.",
-    );
-  }
+    if (
+      !response.data ||
+      response.data.status !== "success"
+    ) {
+      throw new Error(
+        response.data?.message ||
+          "Unable to initialize Flutterwave payment.",
+      );
+    }
 
-  return {
-    txRef,
+    return {
+      txRef,
+      paymentLink:
+        response.data.data.link,
 
-    paymentLink:
-      response.data.data.link,
+      amount:
+        PAINTING_ESTIMATE_UNLOCK_FEE,
 
-    amount:
-      PAINTING_ESTIMATE_UNLOCK_FEE,
-
-    currency: "NGN",
+      currency: "NGN",
+    };
   };
-};
 
 export const verifyPaintingEstimatePayment =
   async (transactionId) => {

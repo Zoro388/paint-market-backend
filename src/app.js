@@ -92,7 +92,6 @@ app.use(
   })
 );
 
-
 /*
 |--------------------------------------------------------------------------
 | CORS
@@ -109,41 +108,38 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-
       if (!origin) {
-
-        return callback(
-          null,
-          true
-        );
-
+        return callback(null, true);
       }
 
-      if (
-        allowedOrigins.includes(
-          origin
-        )
-      ) {
-
-        return callback(
-          null,
-          true
-        );
-
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
       }
 
-      callback(
-        new Error(
-          "Not allowed by CORS"
-        )
+      return callback(
+        new Error(`Not allowed by CORS: ${origin}`)
       );
-
     },
 
     credentials: true,
 
+    methods: [
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "OPTIONS",
+    ],
+
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+    ],
   })
 );
+
+app.options("*", cors());
 
 
 /*

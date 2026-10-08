@@ -30,8 +30,9 @@ export const initializePaintingEstimatePayment =
           currency: "NGN",
 
           redirect_url:
-            process.env
-              .PAINTING_ESTIMATE_PAYMENT_REDIRECT_URL,
+  `${process.env.PAINTING_ESTIMATE_PAYMENT_REDIRECT_URL}?estimateId=${encodeURIComponent(
+    estimateId,
+  )}`,
 
           payment_options:
             "card,banktransfer,ussd",

@@ -34,6 +34,7 @@ import checkoutRoutes from "./routes/checkout.routes.js";
 import frontendPaymentRoutes from "./routes/frontendPayment.routes.js";
 // import paintingEstimatorRoutes from "./routes/paintingEstimator.routes.js";
 import paintingEstimatorRoutes from "./routes/paintingEstimator.routes.js";
+import inspectionBookingRoutes from "./routes/inspectionBooking.routes.js";
 
 /*
 |--------------------------------------------------------------------------
@@ -188,6 +189,7 @@ app.use(
   paintingEstimatorRoutes
 );
 
+app.use("/api/inspection-bookings", inspectionBookingRoutes);
 
 app.use(
   "/api/products",

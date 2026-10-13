@@ -13,12 +13,16 @@ import {
 // Amounts are in Nigerian naira.
 const INSPECTION_FEES = {
   "FCT - Abuja": 45000,
+
+  // Lagos and South-West
   Lagos: 180000,
   Ogun: 180000,
   Ondo: 180000,
   Osun: 180000,
   Oyo: 180000,
   Ekiti: 180000,
+
+  // Kogi and Kwara
   Kogi: 130000,
   Kwara: 130000,
 
@@ -47,6 +51,14 @@ const INSPECTION_FEES = {
   Taraba: 150000,
   Yobe: 150000,
   Zamfara: 150000,
+
+  // Other states
+  "Akwa Ibom": 95000,
+  Bayelsa: 95000,
+  "Cross River": 95000,
+  Delta: 95000,
+  Edo: 95000,
+  Rivers: 95000,
 };
 
 const getInspectionFee = (state) => {
@@ -237,6 +249,9 @@ export const verifyInspectionBooking = async (req, res) => {
         message: "This inspection booking is already confirmed.",
         booking: {
           id: booking._id,
+          inspectionDate: booking.inspectionDate,
+          inspectionFee: booking.inspectionFee,
+          currency: booking.currency,
           paymentStatus: booking.paymentStatus,
           bookingStatus: booking.bookingStatus,
         },

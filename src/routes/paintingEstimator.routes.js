@@ -1,9 +1,8 @@
+
 import express from "express";
 
 import {
   createPaintingEstimate,
-  initializePaintingEstimate,
-  verifyPaintingEstimate,
   getPaintingEstimate,
   getPaintingEstimatePainters,
   getAdminPaintingEstimates,
@@ -11,10 +10,12 @@ import {
 
 const router = express.Router();
 
-
 /*
 |--------------------------------------------------------------------------
 | CREATE PAINTING ESTIMATE
+|--------------------------------------------------------------------------
+|
+| Creating an estimate is free.
 |--------------------------------------------------------------------------
 */
 
@@ -23,39 +24,13 @@ router.post(
   createPaintingEstimate,
 );
 
-
-/*
-|--------------------------------------------------------------------------
-| INITIALIZE FLUTTERWAVE PAYMENT
-|--------------------------------------------------------------------------
-*/
-
-router.post(
-  "/:id/payment",
-  initializePaintingEstimate,
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| VERIFY FLUTTERWAVE PAYMENT
-|--------------------------------------------------------------------------
-*/
-
-router.post(
-  "/:id/verify-payment",
-  verifyPaintingEstimate,
-);
-
-
 /*
 |--------------------------------------------------------------------------
 | GET APPROVED PAINTERS
 |--------------------------------------------------------------------------
 |
-| IMPORTANT:
 | This route must be BEFORE /:id.
-|
+|--------------------------------------------------------------------------
 */
 
 router.get(
@@ -63,26 +38,13 @@ router.get(
   getPaintingEstimatePainters,
 );
 
-
-/*
-|--------------------------------------------------------------------------
-| GET PAINTING ESTIMATE
-|--------------------------------------------------------------------------
-*/
-
-router.get(
-  "/:id",
-  getPaintingEstimate,
-);
-
-
 /*
 |--------------------------------------------------------------------------
 | ADMIN ESTIMATES
 |--------------------------------------------------------------------------
 |
 | Dashboard integration will be handled later.
-|
+|--------------------------------------------------------------------------
 */
 
 router.get(
@@ -90,5 +52,18 @@ router.get(
   getAdminPaintingEstimates,
 );
 
+/*
+|--------------------------------------------------------------------------
+| GET PAINTING ESTIMATE
+|--------------------------------------------------------------------------
+|
+| Estimates are free to view.
+|--------------------------------------------------------------------------
+*/
+
+router.get(
+  "/:id",
+  getPaintingEstimate,
+);
 
 export default router;

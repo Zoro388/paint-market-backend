@@ -87,13 +87,10 @@ export const calculatePaintingEstimate = ({
 }) => {
   const area = getAreaFromBedrooms(bedrooms);
 
-  const finishMultiplier =
-    FINISH_MULTIPLIERS[finishLevel];
+  const finishMultiplier = FINISH_MULTIPLIERS[finishLevel];
+  const stateMultiplier = STATE_MULTIPLIERS[location];
 
-  const stateMultiplier =
-    STATE_MULTIPLIERS[location];
-
-  if (!finishMultiplier) {
+  if (typeof finishMultiplier !== "number") {
     throw new Error("Invalid finishing level.");
   }
 
@@ -101,13 +98,24 @@ export const calculatePaintingEstimate = ({
     throw new Error("Invalid project state.");
   }
 
-  const normalizedExtras = Array.isArray(extras)
-    ? extras.filter(Boolean)
-    : [];
+  if (!Array.isArray(extras)) {
+    throw new Error("Extras must be provided as an array.");
+  }
+
+  const normalizedExtras = [...new Set(extras.filter(Boolean))];
+
+  const invalidExtras = normalizedExtras.filter(
+    (extra) => !Object.prototype.hasOwnProperty.call(EXTRA_RATES, extra),
+  );
+
+  if (invalidExtras.length > 0) {
+    throw new Error(
+      `Invalid painting extra(s): ${invalidExtras.join(", ")}`,
+    );
+  }
 
   const extrasCost = normalizedExtras.reduce(
-    (total, extra) =>
-      total + (EXTRA_RATES[extra] || 0),
+    (total, extra) => total + EXTRA_RATES[extra],
     0,
   );
 
@@ -130,18 +138,11 @@ export const calculatePaintingEstimate = ({
   );
 
   const estimatedBudget = Math.round(
-    materialCost +
-      labourCost +
-      extrasCost,
+    materialCost + labourCost + extrasCost,
   );
 
-  const lowEstimate = Math.round(
-    estimatedBudget * 0.9,
-  );
-
-  const highEstimate = Math.round(
-    estimatedBudget * 1.15,
-  );
+  const lowEstimate = Math.round(estimatedBudget * 0.9);
+  const highEstimate = Math.round(estimatedBudget * 1.15);
 
   let specification =
     "Standard emulsion paint with basic surface preparation and a practical finish.";
@@ -171,8 +172,6 @@ export const calculatePaintingEstimate = ({
   };
 };
 
-export const getExtraRates = () =>
-  EXTRA_RATES;
+export const getExtraRates = () => ({ ...EXTRA_RATES });
 
-export const getBedroomAreas = () =>
-  BEDROOM_AREAS;
+export const getBedroomAreas = () => ({ ...BEDROOM_AREAS });

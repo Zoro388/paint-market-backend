@@ -1,3 +1,4 @@
+
 import mongoose from "mongoose";
 
 const NIGERIAN_STATES = [
@@ -85,10 +86,14 @@ const PaintingEstimateSchema = new mongoose.Schema(
     },
 
     paintType: {
-      type: String,
-      enum: ["Matt", "Trowel", "Satin"],
-      required: true,
-    },
+  type: String,
+  enum: [
+    "Marble Trowel Paint",
+    "Gravitex Paint",
+    "Epoxy Floor Paint",
+  ],
+  required: true,
+},
 
     finishLevel: {
       type: String,
@@ -157,9 +162,19 @@ const PaintingEstimateSchema = new mongoose.Schema(
       default: "",
     },
 
+    /*
+    |--------------------------------------------------------------------------
+    | Legacy payment fields
+    |--------------------------------------------------------------------------
+    |
+    | Retained for compatibility with existing database records.
+    | These fields no longer control access to an estimate.
+    |--------------------------------------------------------------------------
+    */
+
     unlockFee: {
       type: Number,
-      default: 50,
+      default: 0,
     },
 
     currency: {
@@ -181,7 +196,7 @@ const PaintingEstimateSchema = new mongoose.Schema(
     paymentStatus: {
       type: String,
       enum: ["pending", "paid", "failed", "refunded"],
-      default: "pending",
+      default: "paid",
     },
 
     paidAt: {
@@ -192,7 +207,7 @@ const PaintingEstimateSchema = new mongoose.Schema(
     estimateStatus: {
       type: String,
       enum: ["created", "paid", "cancelled"],
-      default: "created",
+      default: "paid",
     },
   },
   {

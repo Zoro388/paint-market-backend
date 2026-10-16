@@ -340,3 +340,29 @@ export const getInspectionBookingById = async (req, res) => {
     });
   }
 };
+
+
+/**
+ * GET /api/inspection-bookings
+ * Admin-only list of inspection bookings.
+ */
+export const getAllInspectionBookings = async (req, res) => {
+  try {
+    const bookings = await InspectionBooking.find({})
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      count: bookings.length,
+      bookings,
+    });
+  } catch (error) {
+    console.error("Get all inspection bookings error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to retrieve inspection bookings.",
+    });
+  }
+};

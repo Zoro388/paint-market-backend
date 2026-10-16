@@ -300,3 +300,43 @@ export const verifyInspectionBooking = async (req, res) => {
     return sendError(res, error);
   }
 };
+
+
+
+/**
+ * GET /api/inspection-bookings/:id
+ * Admin-only inspection booking details.
+ */
+export const getInspectionBookingById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid inspection booking ID.",
+      });
+    }
+
+    const booking = await InspectionBooking.findById(id).lean();
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Inspection booking not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      booking,
+    });
+  } catch (error) {
+    console.error("Get inspection booking error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to retrieve inspection booking details.",
+    });
+  }
+};

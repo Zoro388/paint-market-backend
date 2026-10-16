@@ -1,8 +1,11 @@
+
 import crypto from "crypto";
 import mongoose from "mongoose";
 
 import PaintingEstimate from "../models/PaintingEstimate.js";
 import InspectionBooking from "../models/InspectionBooking.js";
+
+import { notifyAdminsOfPaidInspection } from "../services/adminNotificationSender.service.js";
 
 import {
   initializeInspectionBookingPayment,
@@ -258,6 +261,7 @@ export const verifyInspectionBooking = async (req, res) => {
       });
     }
 
+    // Keep the existing Flutterwave verification checks unchanged.
     const verifiedPayment = await verifyInspectionBookingPayment({
       transactionId,
       booking,
@@ -267,7 +271,18 @@ export const verifyInspectionBooking = async (req, res) => {
     booking.bookingStatus = "confirmed";
     booking.flutterwaveTransactionId = verifiedPayment.transactionId;
 
+    // Save the successful payment before attempting notifications.
     await booking.save();
+
+    // Notification failure must never change the payment result.
+    try {
+      await notifyAdminsOfPaidInspection(booking);
+    } catch (notificationError) {
+      console.error(
+        "Inspection payment succeeded, but admin notification failed:",
+        notificationError?.message,
+      );
+    }
 
     return res.json({
       success: true,

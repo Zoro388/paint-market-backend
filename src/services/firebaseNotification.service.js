@@ -1,5 +1,5 @@
-
-import admin from "firebase-admin";
+import { initializeApp, getApps, cert } from "firebase-admin/app";
+import { getMessaging } from "firebase-admin/messaging";
 
 let firebaseApp;
 
@@ -15,10 +15,10 @@ const getFirebaseApp = () => {
   const serviceAccount = JSON.parse(serviceAccountJson);
 
   firebaseApp =
-    admin.apps.length > 0
-      ? admin.app()
-      : admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount),
+    getApps().length > 0
+      ? getApps()[0]
+      : initializeApp({
+          credential: cert(serviceAccount),
         });
 
   return firebaseApp;
@@ -32,17 +32,23 @@ export const sendAdminPushNotification = async ({
 }) => {
   const app = getFirebaseApp();
 
-  return admin.messaging(app).send({
+  return getMessaging(app).send({
     token,
-    notification: { title, body },
+    notification: {
+      title,
+      body,
+    },
     data: Object.fromEntries(
-      Object.entries(data).map(([key, value]) => [key, String(value)]),
+      Object.entries(data).map(([key, value]) => [
+        key,
+        String(value),
+      ]),
     ),
     webpush: {
       notification: {
         title,
         body,
-        icon: "/icon.png",
+        icon: "https://paintdomain.com/icon.png",
       },
     },
   });

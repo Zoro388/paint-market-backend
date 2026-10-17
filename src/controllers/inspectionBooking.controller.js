@@ -64,13 +64,15 @@ const INSPECTION_FEES = {
   Rivers: 100,
 };
 
-const getInspectionFee = (state) => {
-  const normalizedState = String(state || "").trim();
+const cleanString = (value) =>
+  typeof value === "string" ? value.trim() : "";
 
-  // Do not silently charge an incorrect fee for an unknown state.
+const getInspectionFee = (state) => {
+  const normalizedState = cleanString(state);
   const fee = INSPECTION_FEES[normalizedState];
 
-  if (!fee) {
+  // Do not silently charge an incorrect fee for an unknown state.
+  if (fee === undefined || fee === null) {
     const error = new Error(
       `The inspection fee for "${normalizedState}" has not been configured.`,
     );
@@ -108,7 +110,7 @@ const sendError = (res, error) => {
  */
 export const createInspectionBooking = async (req, res) => {
   try {
-    const { paintingEstimateId, inspectionDate } = req.body;
+    const { paintingEstimateId, inspectionDate } = req.body || {};
 
     if (
       !paintingEstimateId ||
@@ -145,19 +147,42 @@ export const createInspectionBooking = async (req, res) => {
       });
     }
 
-    const inspectionFee = getInspectionFee(estimate.location);
+    // Support newer estimates using state and older estimates using location.
+    const propertyState = cleanString(
+      estimate.state || estimate.location,
+    );
+
+    const propertyLga = cleanString(estimate.lga);
+    const propertyAddress = cleanString(estimate.exactAddress);
+
+    // Use the property's state to calculate the inspection fee.
+    const inspectionFee = getInspectionFee(propertyState);
     const paymentReference = `PD-INS-${crypto.randomUUID()}`;
 
     const booking = await InspectionBooking.create({
       paintingEstimateId: estimate._id,
+
+      // Customer details
       fullName: estimate.fullName,
       phoneNumber: estimate.phoneNumber,
       email: estimate.email,
+
+      // Painting project details
       buildingType: estimate.buildingType,
       bedrooms: estimate.bedrooms,
       paintType: estimate.paintType,
-      location: estimate.location,
+
+      // Preserve location for existing API consumers.
+      location: propertyState,
+
+      // Copy the full property location from the saved estimate.
+      state: propertyState,
+      lga: propertyLga,
+      exactAddress: propertyAddress,
+
       extras: estimate.extras || [],
+
+      // Appointment and payment details
       inspectionDate: selectedDate,
       inspectionFee,
       currency: "NGN",
@@ -175,14 +200,27 @@ export const createInspectionBooking = async (req, res) => {
 
       const { paymentLink } = await initializeInspectionBookingPayment({
         booking,
-        redirectUrl: `${frontendUrl.replace(/\/$/, "")}/painting-estimator?inspectionPayment=1&bookingId=${booking._id}`,
+        redirectUrl: `${frontendUrl.replace(/\/+$/, "")}/painting-estimator?inspectionPayment=1&bookingId=${booking._id}`,
       });
 
       return res.status(201).json({
         success: true,
-        message: "Inspection booking created. Complete payment to confirm it.",
+        message:
+          "Inspection booking created. Complete payment to confirm it.",
         booking: {
           id: booking._id,
+          paintingEstimateId: booking.paintingEstimateId,
+          fullName: booking.fullName,
+          phoneNumber: booking.phoneNumber,
+          email: booking.email,
+          buildingType: booking.buildingType,
+          bedrooms: booking.bedrooms,
+          paintType: booking.paintType,
+          location: booking.location,
+          state: booking.state,
+          lga: booking.lga,
+          exactAddress: booking.exactAddress,
+          extras: booking.extras,
           inspectionDate: booking.inspectionDate,
           inspectionFee: booking.inspectionFee,
           currency: booking.currency,
@@ -221,7 +259,7 @@ export const createInspectionBooking = async (req, res) => {
 export const verifyInspectionBooking = async (req, res) => {
   try {
     const { id } = req.params;
-    const { transactionId } = req.body;
+    const { transactionId } = req.body || {};
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -257,6 +295,10 @@ export const verifyInspectionBooking = async (req, res) => {
           currency: booking.currency,
           paymentStatus: booking.paymentStatus,
           bookingStatus: booking.bookingStatus,
+          location: booking.location,
+          state: booking.state,
+          lga: booking.lga,
+          exactAddress: booking.exactAddress,
         },
       });
     }
@@ -294,14 +336,16 @@ export const verifyInspectionBooking = async (req, res) => {
         currency: booking.currency,
         paymentStatus: booking.paymentStatus,
         bookingStatus: booking.bookingStatus,
+        location: booking.location,
+        state: booking.state,
+        lga: booking.lga,
+        exactAddress: booking.exactAddress,
       },
     });
   } catch (error) {
     return sendError(res, error);
   }
 };
-
-
 
 /**
  * GET /api/inspection-bookings/:id
@@ -340,7 +384,6 @@ export const getInspectionBookingById = async (req, res) => {
     });
   }
 };
-
 
 /**
  * GET /api/inspection-bookings

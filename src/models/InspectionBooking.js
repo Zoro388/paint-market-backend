@@ -1,3 +1,4 @@
+
 import mongoose from "mongoose";
 
 const inspectionBookingSchema = new mongoose.Schema(
@@ -41,10 +42,31 @@ const inspectionBookingSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+
+    // Keep location for compatibility with existing code
     location: {
       type: String,
       required: true,
+      trim: true,
     },
+
+    // Detailed property location
+    state: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    lga: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    exactAddress: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     extras: {
       type: [String],
       default: [],

@@ -15,6 +15,30 @@ export const notifyAdminsOfPaidInspection = async (booking) => {
       return;
     }
 
+    const propertyState = String(
+      booking.state || booking.location || "",
+    ).trim();
+
+    const lga = String(booking.lga || "").trim();
+
+    const exactAddress = String(
+      booking.exactAddress || "",
+    ).trim();
+
+    const propertyLocation = [
+      exactAddress,
+      [lga, propertyState].filter(Boolean).join(", "),
+    ]
+      .filter(Boolean)
+      .join(" — ");
+
+    const notificationBody = [
+      `${booking.fullName || "A customer"} has paid for an inspection booking.`,
+      propertyLocation ? `Property: ${propertyLocation}` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
     const results = await Promise.allSettled(
       devices.map(({ token }) => {
         if (!token || typeof token !== "string") {
@@ -24,10 +48,13 @@ export const notifyAdminsOfPaidInspection = async (booking) => {
         return sendAdminPushNotification({
           token,
           title: "Inspection booking paid",
-          body: `${booking.fullName} has paid for an inspection booking.`,
+          body: notificationBody,
           data: {
             type: "inspection_payment_success",
             bookingId: booking._id.toString(),
+            state: propertyState,
+            lga,
+            exactAddress,
           },
         });
       }),
@@ -72,6 +99,7 @@ export const notifyAdminsOfPaidInspection = async (booking) => {
       message: error?.message,
       stack: error?.stack,
     });
+
     throw error;
   }
 };

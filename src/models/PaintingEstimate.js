@@ -86,14 +86,14 @@ const PaintingEstimateSchema = new mongoose.Schema(
     },
 
     paintType: {
-  type: String,
-  enum: [
-    "Marble Trowel Paint",
-    "Gravitex Paint",
-    "Epoxy Floor Paint",
-  ],
-  required: true,
-},
+      type: String,
+      enum: [
+        "Marble Trowel Paint",
+        "Gravitex Paint",
+        "Epoxy Floor Paint",
+      ],
+      required: true,
+    },
 
     finishLevel: {
       type: String,
@@ -101,6 +101,30 @@ const PaintingEstimateSchema = new mongoose.Schema(
       required: true,
     },
 
+    // State of the property.
+    // The existing location field remains available for compatibility.
+    state: {
+      type: String,
+      enum: NIGERIAN_STATES,
+      default: undefined,
+      trim: true,
+    },
+
+    // Local Government Area within the selected state.
+    lga: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    // Street, estate, community, house number, or nearby landmark.
+    exactAddress: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    // Legacy state field used by existing controllers and fee calculations.
     location: {
       type: String,
       enum: NIGERIAN_STATES,
@@ -162,16 +186,7 @@ const PaintingEstimateSchema = new mongoose.Schema(
       default: "",
     },
 
-    /*
-    |--------------------------------------------------------------------------
-    | Legacy payment fields
-    |--------------------------------------------------------------------------
-    |
-    | Retained for compatibility with existing database records.
-    | These fields no longer control access to an estimate.
-    |--------------------------------------------------------------------------
-    */
-
+    // Existing payment fields retained for compatibility.
     unlockFee: {
       type: Number,
       default: 0,
@@ -223,6 +238,11 @@ PaintingEstimateSchema.index({
 PaintingEstimateSchema.index({
   location: 1,
   createdAt: -1,
+});
+
+PaintingEstimateSchema.index({
+  state: 1,
+  lga: 1,
 });
 
 export default mongoose.model(

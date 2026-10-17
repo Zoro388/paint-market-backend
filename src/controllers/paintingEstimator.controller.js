@@ -139,6 +139,9 @@ export const createPaintingEstimate = async (req, res) => {
       paintType,
       finishLevel,
       location,
+      state,
+      lga,
+      exactAddress,
       extras,
     } = req.body || {};
 
@@ -147,10 +150,16 @@ export const createPaintingEstimate = async (req, res) => {
     const cleanedEmail = cleanString(email).toLowerCase();
     const cleanedBuildingType = cleanString(buildingType);
     const cleanedPaintType = cleanString(paintType);
-    const cleanedLocation = cleanString(location);
 
-    // The current frontend does not ask users to select a finish level.
-    const cleanedFinishLevel = cleanString(finishLevel) || "Mid-Range";
+    // Accept the new state field and retain compatibility with
+    // existing requests that send location.
+    const cleanedState = cleanString(state || location);
+    const cleanedLocation = cleanedState;
+    const cleanedLga = cleanString(lga);
+    const cleanedExactAddress = cleanString(exactAddress);
+
+    const cleanedFinishLevel =
+      cleanString(finishLevel) || "Mid-Range";
 
     if (
       !cleanedFullName ||
@@ -161,11 +170,14 @@ export const createPaintingEstimate = async (req, res) => {
       bedrooms === null ||
       bedrooms === "" ||
       !cleanedPaintType ||
-      !cleanedLocation
+      !cleanedState ||
+      !cleanedLga ||
+      !cleanedExactAddress
     ) {
       return res.status(400).json({
         success: false,
-        message: "Please complete all required fields.",
+        message:
+          "Please complete all required fields, including state, LGA, and exact property address.",
       });
     }
 
@@ -173,6 +185,13 @@ export const createPaintingEstimate = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Please provide a valid email address.",
+      });
+    }
+
+    if (cleanedExactAddress.length < 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a more complete property address.",
       });
     }
 
@@ -209,9 +228,8 @@ export const createPaintingEstimate = async (req, res) => {
     const normalizedExtras = normalizeExtras(extras);
 
     /*
-     * Verify the state and finishing level using the existing
-     * calculation service. Its calculation is retained for the
-     * material, labour, and quantity breakdown.
+     * Retain the existing estimate calculation and pricing.
+     * State, LGA, and address are saved as location details.
      */
     const calculation = calculatePaintingEstimate({
       bedrooms: bedroomCount,
@@ -220,19 +238,14 @@ export const createPaintingEstimate = async (req, res) => {
       extras: normalizedExtras,
     });
 
-    /*
-     * The customer-facing estimate must match the frontend's
-     * existing paint-type and bedroom price ranges.
-     *
-     * Location and extras do not change this displayed range.
-     */
     const priceRange =
       FRONTEND_PRICES[cleanedPaintType]?.[bedroomCount];
 
     if (!priceRange) {
       return res.status(400).json({
         success: false,
-        message: "Unable to calculate a price for these selections.",
+        message:
+          "Unable to calculate a price for these selections.",
       });
     }
 
@@ -253,15 +266,23 @@ export const createPaintingEstimate = async (req, res) => {
 
       paintType: cleanedPaintType,
       finishLevel: cleanedFinishLevel,
-      location: cleanedLocation,
+
+      // Keep location for existing API consumers.
+      location: cleanedState,
+
+      // New property location details.
+      state: cleanedState,
+      lga: cleanedLga,
+      exactAddress: cleanedExactAddress,
+
       extras: normalizedExtras,
 
-      // Keep the frontend's existing price range unchanged.
+      // Existing price ranges remain unchanged.
       lowEstimate: priceRange.low,
       highEstimate: priceRange.high,
       estimatedBudget,
 
-      // Keep the existing calculation's supporting breakdown.
+      // Existing calculation breakdown.
       paintQuantity: calculation.paintQuantity,
       bucketQuantity: calculation.bucketQuantity,
       litresPerBucket: calculation.litresPerBucket,
@@ -270,7 +291,7 @@ export const createPaintingEstimate = async (req, res) => {
       extrasCost: calculation.extrasCost,
       specification: calculation.specification,
 
-      // Legacy fields: estimates are free.
+      // Preserve legacy free-estimate fields.
       unlockFee: 0,
       currency: "NGN",
       paymentStatus: "paid",
@@ -377,7 +398,7 @@ export const getPaintingEstimatePainters = async (req, res) => {
 
     const estimate = await PaintingEstimate.findById(
       req.params.id,
-    ).select("location");
+    ).select("location state");
 
     if (!estimate) {
       return res.status(404).json({
@@ -386,7 +407,8 @@ export const getPaintingEstimatePainters = async (req, res) => {
       });
     }
 
-    const stateRegex = getPainterStateRegex(estimate.location);
+    const painterState = estimate.state || estimate.location;
+    const stateRegex = getPainterStateRegex(painterState);
 
     const painters = await PainterProfile.find({
       state: { $regex: stateRegex },
@@ -428,7 +450,8 @@ export const getPaintingEstimatePainters = async (req, res) => {
         ),
         totalReviews: painter.totalReviews || 0,
         completedJobs: painter.completedJobs || 0,
-        availabilityStatus: painter.availabilityStatus || "offline",
+        availabilityStatus:
+          painter.availabilityStatus || "offline",
         isFeatured: Boolean(painter.isFeatured),
         isVerified: Boolean(painter.isVerified),
         profileImage: painter.profileImage?.url || "",
@@ -438,12 +461,15 @@ export const getPaintingEstimatePainters = async (req, res) => {
 
     return res.json({
       success: true,
-      state: estimate.location,
+      state: painterState,
       count: formattedPainters.length,
       painters: formattedPainters,
     });
   } catch (error) {
-    console.error("Get painting estimate painters error:", error);
+    console.error(
+      "Get painting estimate painters error:",
+      error,
+    );
 
     return res.status(500).json({
       success: false,
@@ -475,7 +501,7 @@ export const getAdminPaintingEstimates = async (req, res) => {
     }
 
     if (req.query.state) {
-      filter.location = req.query.state;
+      filter.state = req.query.state;
     }
 
     const [estimates, total] = await Promise.all([
@@ -499,7 +525,10 @@ export const getAdminPaintingEstimates = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get admin painting estimates error:", error);
+    console.error(
+      "Get admin painting estimates error:",
+      error,
+    );
 
     return res.status(500).json({
       success: false,

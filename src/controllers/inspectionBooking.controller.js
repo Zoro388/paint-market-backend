@@ -61,7 +61,7 @@ const INSPECTION_FEES = {
   "Cross River": 95000,
   Delta: 95000,
   Edo: 95000,
-  Rivers: 100,
+  Rivers: 200000,
 };
 
 const cleanString = (value) =>

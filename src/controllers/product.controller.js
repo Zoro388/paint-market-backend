@@ -2,367 +2,946 @@
 // import asyncHandler from "../utils/asyncHandler.js";
 // import cloudinary from "../config/cloudinary.js";
 
-// export const createProduct =
-//   asyncHandler(async (req, res) => {
+// /*
+// |--------------------------------------------------------------------------
+// | Upload Image To Cloudinary
+// |--------------------------------------------------------------------------
+// */
 
-//     if (
-//       !req.files ||
-//       req.files.length === 0
-//     ) {
+// const uploadImage = async (file) => {
+
+//   const result =
+//     await cloudinary.uploader.upload(
+//       `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+//       {
+//         folder: "paint-market/products",
+//       }
+//     );
+
+//   return {
+//     url: result.secure_url,
+//     publicId: result.public_id,
+//   };
+
+// };
+
+// /*
+// |--------------------------------------------------------------------------
+// | CREATE PRODUCT
+// |--------------------------------------------------------------------------
+// */
+
+// export const createProduct = asyncHandler(async (req, res) => {
+//   console.log("========== CREATE PRODUCT ==========");
+//   console.log("BODY:");
+//   console.log(req.body);
+//   console.log("FILES:");
+//   console.log(
+//     req.files?.map((file) => ({
+//       fieldname: file.fieldname,
+//       originalname: file.originalname,
+//     }))
+//   );
+
+//   /*
+//   |--------------------------------------------------------------------------
+//   | Validate bucket image
+//   |--------------------------------------------------------------------------
+//   */
+
+//   const bucketFile = req.files?.find(
+//     (file) => file.fieldname === "productImages"
+//   );
+
+//   if (!bucketFile) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "Please upload the bucket image.",
+//     });
+//   }
+
+//   /*
+//   |--------------------------------------------------------------------------
+//   | Upload bucket image
+//   |--------------------------------------------------------------------------
+//   */
+
+//   const bucketImage = await uploadImage(bucketFile);
+
+//   const bucketImages = [bucketImage.url];
+
+//   /*
+//   |--------------------------------------------------------------------------
+//   | Parse questions
+//   |--------------------------------------------------------------------------
+//   */
+
+//   let questions = [];
+
+//   if (req.body.questions) {
+//     try {
+//       questions = JSON.parse(req.body.questions);
+//     } catch (error) {
 //       return res.status(400).json({
 //         success: false,
-//         message:
-//           "Please upload at least one product image",
+//         message: "Invalid questions JSON.",
 //       });
 //     }
+//   }
 
-//     const uploadedImages = [];
+//   /*
+//   |--------------------------------------------------------------------------
+//   | Parse product features
+//   |--------------------------------------------------------------------------
+//   */
 
-//     for (const file of req.files) {
+//   let productFeatures = [];
 
-//       const result =
-//         await cloudinary.uploader.upload(
-//           `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
-//           {
-//             folder:
-//               "paint-market/products",
-//           }
-//         );
+//   if (req.body.productFeatures) {
+//     try {
+//       productFeatures = JSON.parse(req.body.productFeatures);
+//     } catch (error) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid productFeatures JSON.",
+//       });
+//     }
+//   }
 
-//       uploadedImages.push(
-//         result.secure_url
+//   /*
+//   |--------------------------------------------------------------------------
+//   | Parse variants
+//   |--------------------------------------------------------------------------
+//   */
+
+//   let variants = [];
+
+//   if (req.body.variants) {
+//     try {
+//       variants = JSON.parse(req.body.variants);
+//     } catch (error) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid variants JSON.",
+//       });
+//     }
+//   }
+
+//   /*
+//   |--------------------------------------------------------------------------
+//   | Upload variant images
+//   |--------------------------------------------------------------------------
+//   |
+//   | Variant image field names from frontend:
+//   |
+//   | variantImage_new_0
+//   | variantImage_new_1
+//   | variantImage_<existing-id>
+//   |
+//   */
+
+//   const uploadedVariants = [];
+
+//   for (let i = 0; i < variants.length; i++) {
+//     const variant = variants[i];
+
+//     let variantImageFile = null;
+
+//     /*
+//      * Existing variant
+//      */
+//     if (variant._id) {
+//       variantImageFile = req.files?.find(
+//         (file) => file.fieldname === `variantImage_${variant._id}`
 //       );
 //     }
 
-//     let questions = [];
-
-//     if (req.body.questions) {
-//       questions = JSON.parse(
-//         req.body.questions
+//     /*
+//      * New variant
+//      */
+//     if (!variant._id) {
+//       variantImageFile = req.files?.find(
+//         (file) => file.fieldname === `variantImage_new_${i}`
 //       );
 //     }
 
-//     let productFeatures = [];
+//     let image = undefined;
 
-//     if (
-//       req.body.productFeatures
-//     ) {
-//       productFeatures =
-//         JSON.parse(
-//           req.body.productFeatures
-//         );
+//     /*
+//      * Variant image is optional
+//      */
+//     if (variantImageFile) {
+//       const uploadedImage = await uploadImage(variantImageFile);
+
+//       image = {
+//         url: uploadedImage.url,
+//         publicId: uploadedImage.publicId,
+//       };
 //     }
 
-//     const product =
-//       await Product.create({
-
-//         productName:
-//           req.body.productName,
-
-//         productCategory:
-//           req.body.productCategory,
-
-//         productDescription:
-//           req.body.productDescription,
-
-//         colourCode:
-//           req.body.colourCode,
-
-//         colourName:
-//           req.body.colourName,
-
-//         hex:
-//           req.body.hex,
-
-//         price:
-//           Number(req.body.price),
-
-//         stockQuantity:
-//           Number(
-//             req.body.stockQuantity
-//           ),
-
-//         coverageInformation:
-//           req.body.coverageInformation,
-
-//         productFeatures,
-
-//         questions,
-
-//         status:
-//           req.body.status,
-
-//         productImages:
-//           uploadedImages,
-
+//     /*
+//      * The schema currently requires an image object.
+//      * Therefore, if no image was uploaded, do not create
+//      * the variant with a missing image.
+//      */
+//     if (!image) {
+//       return res.status(400).json({
+//         success: false,
+//         message: `Please upload an image for the "${variant.colourName}" colour variant.`,
 //       });
+//     }
 
-//     res.status(201).json({
-//       success: true,
-//       message:
-//         "Product created successfully",
-//       product,
+//     uploadedVariants.push({
+//       colourName: variant.colourName,
+//       colourCode: variant.colourCode,
+//       image,
 //     });
+//   }
 
+//   /*
+//   |--------------------------------------------------------------------------
+//   | Create product
+//   |--------------------------------------------------------------------------
+//   */
+
+//   console.log("========== PRODUCT TO CREATE ==========");
+
+//   console.dir(
+//     {
+//       productName: req.body.productName,
+//       productCategory: req.body.productCategory,
+//       productDescription: req.body.productDescription,
+//       price: Number(req.body.price),
+//       coverageInformation: req.body.coverageInformation,
+//       productFeatures,
+//       questions,
+//       status: req.body.status,
+//       productImages: bucketImages,
+//       variants: uploadedVariants,
+//     },
+//     { depth: null }
+//   );
+
+//   const product = await Product.create({
+//     productName: req.body.productName,
+//     productCategory: req.body.productCategory,
+//     productDescription: req.body.productDescription,
+//     price: Number(req.body.price),
+//     coverageInformation: req.body.coverageInformation,
+//     productFeatures,
+//     questions,
+//     status: req.body.status,
+//     productImages: bucketImages,
+//     variants: uploadedVariants,
 //   });
+
+//   return res.status(201).json({
+//     success: true,
+//     message: "Product created successfully.",
+//     product,
+//   });
+// });
+
+
+// /*
+// |--------------------------------------------------------------------------
+// | GET ALL PRODUCTS
+// |--------------------------------------------------------------------------
+// */
 
 // export const getProducts =
-//   asyncHandler(async (req, res) => {
-//     const products =
-//       await Product.find();
+// asyncHandler(async (req, res) => {
 
-//     res.status(200).json({
-//       success: true,
-//       count: products.length,
-//       products,
+//   const products =
+//     await Product.find()
+//     .sort({
+//       createdAt: -1,
 //     });
+
+//   res.status(200).json({
+
+//     success: true,
+
+//     count: products.length,
+
+//     products,
+
 //   });
+
+// });
+
+// /*
+// |--------------------------------------------------------------------------
+// | GET SINGLE PRODUCT
+// |--------------------------------------------------------------------------
+// */
 
 // export const getProduct =
-//   asyncHandler(async (req, res) => {
-//     const product =
-//       await Product.findById(
-//         req.params.id
-//       );
+// asyncHandler(async (req, res) => {
 
-//     if (!product) {
-//       return res.status(404).json({
-//         success: false,
-//         message:
-//           "Product not found",
-//       });
-//     }
+//   const product =
+//     await Product.findById(
+//       req.params.id
+//     );
 
-//     res.status(200).json({
-//       success: true,
-//       product,
+//   if (!product) {
+
+//     return res.status(404).json({
+
+//       success: false,
+
+//       message:
+//         "Product not found",
+
 //     });
+
+//   }
+
+//   res.status(200).json({
+
+//     success: true,
+
+//     product,
+
 //   });
+
+// });
+
+// /*
+// |--------------------------------------------------------------------------
+// | UPDATE PRODUCT
+// |--------------------------------------------------------------------------
+// */
 // export const updateProduct =
-//   asyncHandler(async (req, res) => {
+// asyncHandler(async (req, res) => {
 
 //     const product =
-//       await Product.findById(
-//         req.params.id
-//       );
+//     await Product.findById(req.params.id);
 
 //     if (!product) {
-//       return res.status(404).json({
-//         success: false,
-//         message:
-//           "Product not found",
-//       });
+
+//         return res.status(404).json({
+
+//             success: false,
+
+//             message: "Product not found",
+
+//         });
+
 //     }
 
-//     let uploadedImages =
-//       product.productImages;
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Parse Questions
+//     |--------------------------------------------------------------------------
+//     */
 
-//     // Upload new images only if provided
-//     if (
-//       req.files &&
-//       req.files.length > 0
-//     ) {
-
-//       uploadedImages = [];
-
-//       for (const file of req.files) {
-
-//         const result =
-//           await cloudinary.uploader.upload(
-//             `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
-//             {
-//               folder:
-//                 "paint-market/products",
-//             }
-//           );
-
-//         uploadedImages.push(
-//           result.secure_url
-//         );
-//       }
-//     }
-
-//     let questions =
-//       product.questions;
+//     let questions = product.questions;
 
 //     if (req.body.questions) {
-//       questions =
-//         JSON.parse(
-//           req.body.questions
-//         );
+
+//         questions = JSON.parse(req.body.questions);
+
 //     }
 
-//     let productFeatures =
-//       product.productFeatures;
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Parse Product Features
+//     |--------------------------------------------------------------------------
+//     */
 
-//     if (
-//       req.body.productFeatures
+//     let productFeatures = product.productFeatures;
+
+//     if (req.body.productFeatures) {
+
+//         productFeatures = JSON.parse(req.body.productFeatures);
+
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Parse Variants
+//     |--------------------------------------------------------------------------
+//     */
+
+//     let variants = product.variants;
+
+//     if (req.body.variants) {
+
+//         variants = JSON.parse(req.body.variants);
+
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Separate Uploaded Files
+//     |--------------------------------------------------------------------------
+//     */
+
+//     const files = req.files || [];
+
+//     let bucketImageFile = null;
+
+//     const variantFiles = {};
+
+//     for (const file of files) {
+
+//         if (file.fieldname === "productImages") {
+
+//             bucketImageFile = file;
+
+//         }
+
+//         else if (
+
+//             file.fieldname.startsWith(
+
+//                 "variantImage_"
+
+//             )
+
+//         ) {
+
+//             const key = file.fieldname.replace(
+
+//                 "variantImage_",
+
+//                 ""
+
+//             );
+
+//             variantFiles[key] = file;
+
+//         }
+
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Bucket Image
+//     |--------------------------------------------------------------------------
+//     */
+
+//     let bucketImages = product.productImages;
+
+//     if (bucketImageFile) {
+
+//         const uploadedBucket =
+
+//         await uploadImage(bucketImageFile);
+
+//         bucketImages = [
+
+//             uploadedBucket.url,
+
+//         ];
+
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Variants
+//     |--------------------------------------------------------------------------
+//     */
+
+//     const uploadedVariants = [];
+
+//     for (
+
+//         let index = 0;
+
+//         index < variants.length;
+
+//         index++
+
 //     ) {
-//       productFeatures =
-//         JSON.parse(
-//           req.body.productFeatures
-//         );
+
+//         const variant = variants[index];
+
+//         let image = null;
+
+//         /*
+//         |--------------------------------------------------------------------------
+//         | Existing Variant
+//         |--------------------------------------------------------------------------
+//         */
+
+//         if (variant._id) {
+
+//             const existing =
+
+//             product.variants.id(
+
+//                 variant._id
+
+//             );
+
+//             if (existing) {
+
+//                 image = existing.image;
+
+//             }
+
+//         }
+
+//         /*
+//         |--------------------------------------------------------------------------
+//         | Existing Variant Image Updated
+//         |--------------------------------------------------------------------------
+//         */
+
+//         if (
+
+//             variant._id &&
+
+//             variantFiles[variant._id]
+
+//         ) {
+
+//             const uploaded =
+
+//             await uploadImage(
+
+//                 variantFiles[variant._id]
+
+//             );
+
+//             image = {
+
+//                 url: uploaded.url,
+
+//                 publicId:
+
+//                 uploaded.publicId,
+
+//             };
+
+//         }
+
+//         /*
+//         |--------------------------------------------------------------------------
+//         | New Variant
+//         |--------------------------------------------------------------------------
+//         */
+
+//         if (
+
+//             !variant._id &&
+
+//             variantFiles[`new_${index}`]
+
+//         ) {
+
+//             const uploaded =
+
+//             await uploadImage(
+
+//                 variantFiles[`new_${index}`]
+
+//             );
+
+//             image = {
+
+//                 url: uploaded.url,
+
+//                 publicId:
+
+//                 uploaded.publicId,
+
+//             };
+
+//         }
+
+//         uploadedVariants.push({
+
+//             colourName:
+
+//             variant.colourName,
+
+//             colourCode:
+
+//             variant.colourCode,
+
+//             image,
+
+//         });
+
 //     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Update Product
+//     |--------------------------------------------------------------------------
+//     */
 
 //     product.productName =
-//       req.body.productName ??
-//       product.productName;
+
+//     req.body.productName ??
+
+//     product.productName;
 
 //     product.productCategory =
-//       req.body.productCategory ??
-//       product.productCategory;
+
+//     req.body.productCategory ??
+
+//     product.productCategory;
 
 //     product.productDescription =
-//       req.body.productDescription ??
-//       product.productDescription;
 
-//     product.colourCode =
-//       req.body.colourCode ??
-//       product.colourCode;
+//     req.body.productDescription ??
 
-//     product.colourName =
-//       req.body.colourName ??
-//       product.colourName;
-
-//     product.hex =
-//       req.body.hex ??
-//       product.hex;
+//     product.productDescription;
 
 //     product.price =
-//       req.body.price ??
-//       product.price;
 
-//     product.stockQuantity =
-//       req.body.stockQuantity ??
-//       product.stockQuantity;
+//     req.body.price ??
+
+//     product.price;
 
 //     product.coverageInformation =
-//       req.body.coverageInformation ??
-//       product.coverageInformation;
+
+//     req.body.coverageInformation ??
+
+//     product.coverageInformation;
 
 //     product.status =
-//       req.body.status ??
-//       product.status;
+
+//     req.body.status ??
+
+//     product.status;
 
 //     product.productImages =
-//       uploadedImages;
+
+//     bucketImages;
 
 //     product.productFeatures =
-//       productFeatures;
+
+//     productFeatures;
 
 //     product.questions =
-//       questions;
+
+//     questions;
+
+//     product.variants =
+
+//     uploadedVariants;
 
 //     await product.save();
 
 //     res.status(200).json({
-//       success: true,
-//       message:
-//         "Product updated successfully",
-//       product,
-//     });
 
-//   });
-// export const deleteProduct =
-//   asyncHandler(async (req, res) => {
-//     const product =
-//       await Product.findById(
-//         req.params.id
-//       );
+//         success: true,
 
-//     if (!product) {
-//       return res.status(404).json({
-//         success: false,
 //         message:
-//           "Product not found",
-//       });
-//     }
 
-//     await product.deleteOne();
+//         "Product updated successfully.",
 
-//     res.status(200).json({
-//       success: true,
+//         product,
+
+//     });
+
+// });
+
+
+// /*
+// |--------------------------------------------------------------------------
+// | DELETE PRODUCT
+// |--------------------------------------------------------------------------
+// */
+
+// export const deleteProduct =
+// asyncHandler(async (req, res) => {
+
+//   const product =
+//     await Product.findById(
+//       req.params.id
+//     );
+
+//   if (!product) {
+
+//     return res.status(404).json({
+
+//       success: false,
+
 //       message:
-//         "Product deleted successfully",
+//         "Product not found",
+
 //     });
+
+//   }
+
+//   await product.deleteOne();
+
+//   res.status(200).json({
+
+//     success: true,
+
+//     message:
+//       "Product deleted successfully",
+
 //   });
 
-  
-//   export const increaseProductStock =
-//   asyncHandler(async (req, res) => {
+// });
 
-//     const { quantity } = req.body;
 
-//     if (!quantity || quantity <= 0) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Quantity must be greater than zero",
-//       });
-//     }
 
-//     const product = await Product.findById(req.params.id);
+
+
+
+// // VARIANT
+
+// /*
+// |--------------------------------------------------------------------------
+// | ADD PRODUCT VARIANT
+// |--------------------------------------------------------------------------
+// */
+
+// /*
+// |--------------------------------------------------------------------------
+// | ADD PRODUCT VARIANT
+// |--------------------------------------------------------------------------
+// */
+
+// export const addProductVariant =
+// asyncHandler(async (req, res) => {
+
+//     const product =
+//     await Product.findById(req.params.id);
 
 //     if (!product) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Product not found",
-//       });
+
+//         return res.status(404).json({
+//             success: false,
+//             message: "Product not found",
+//         });
+
 //     }
 
-//     product.stockQuantity += Number(quantity);
+//     if (!req.file) {
+
+//         return res.status(400).json({
+//             success: false,
+//             message: "Variant image is required.",
+//         });
+
+//     }
+
+//     const uploaded =
+//     await uploadImage(req.file);
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Ensure variants array exists
+//     |--------------------------------------------------------------------------
+//     */
+
+//     if (!Array.isArray(product.variants)) {
+
+//         product.variants = [];
+
+//     }
+
+//     product.variants.push({
+
+//         colourName:
+//             req.body.colourName,
+
+//         colourCode:
+//             req.body.colourCode,
+
+//         image: {
+
+//             url:
+//                 uploaded.url,
+
+//             publicId:
+//                 uploaded.publicId,
+
+//         },
+
+//     });
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Tell Mongoose the array changed
+//     |--------------------------------------------------------------------------
+//     */
+
+//     product.markModified("variants");
+
+//     await product.save();
+
+//     res.status(201).json({
+
+//         success: true,
+
+//         message: "Variant added successfully.",
+
+//         product,
+
+//     });
+
+// });
+
+
+// /*
+// |--------------------------------------------------------------------------
+// | UPDATE PRODUCT VARIANT
+// |--------------------------------------------------------------------------
+// */
+
+// export const updateProductVariant =
+// asyncHandler(async(req,res)=>{
+
+//     const product=
+//     await Product.findById(
+//         req.params.id
+//     );
+
+//     if(!product){
+
+//         return res.status(404).json({
+
+//             success:false,
+
+//             message:"Product not found.",
+
+//         });
+
+//     }
+
+//     const variant=
+//     product.variants.id(
+//         req.params.variantId
+//     );
+
+//     if(!variant){
+
+//         return res.status(404).json({
+
+//             success:false,
+
+//             message:"Variant not found.",
+
+//         });
+
+//     }
+
+//     variant.colourName=
+//     req.body.colourName ??
+//     variant.colourName;
+
+//     variant.colourCode=
+//     req.body.colourCode ??
+//     variant.colourCode;
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Replace Image
+//     |--------------------------------------------------------------------------
+//     */
+
+//     if(req.file){
+
+//         await cloudinary.uploader.destroy(
+//             variant.image.publicId
+//         );
+
+//         const uploaded=
+//         await uploadImage(req.file);
+
+//         variant.image={
+
+//             url:uploaded.url,
+
+//             publicId:
+//             uploaded.publicId,
+
+//         };
+
+//     }
 
 //     await product.save();
 
 //     res.status(200).json({
-//       success: true,
-//       message: "Product stock increased successfully",
-//       product,
+
+//         success:true,
+
+//         message:
+//         "Variant updated successfully.",
+
+//         product,
+
 //     });
 
-//   });
+// });
 
-//   export const decreaseProductStock =
-//   asyncHandler(async (req, res) => {
 
-//     const { quantity } = req.body;
+// /*
+// |--------------------------------------------------------------------------
+// | DELETE PRODUCT VARIANT
+// |--------------------------------------------------------------------------
+// */
 
-//     if (!quantity || quantity <= 0) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Quantity must be greater than zero",
-//       });
+// export const deleteProductVariant =
+// asyncHandler(async(req,res)=>{
+
+//     const product=
+//     await Product.findById(
+//         req.params.id
+//     );
+
+//     if(!product){
+
+//         return res.status(404).json({
+
+//             success:false,
+
+//             message:"Product not found.",
+
+//         });
+
 //     }
 
-//     const product = await Product.findById(req.params.id);
+//     const variant=
+//     product.variants.id(
+//         req.params.variantId
+//     );
 
-//     if (!product) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Product not found",
-//       });
+//     if(!variant){
+
+//         return res.status(404).json({
+
+//             success:false,
+
+//             message:"Variant not found.",
+
+//         });
+
 //     }
 
-//     if (product.stockQuantity < quantity) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Insufficient stock available",
-//       });
-//     }
+//     await cloudinary.uploader.destroy(
+//         variant.image.publicId
+//     );
 
-//     product.stockQuantity -= Number(quantity);
+//     product.variants.pull(
+//         req.params.variantId
+//     );
 
 //     await product.save();
 
 //     res.status(200).json({
-//       success: true,
-//       message: "Product stock decreased successfully",
-//       product,
+
+//         success:true,
+
+//         message:
+//         "Variant deleted successfully.",
+
+//         product,
+
 //     });
 
-//   });
-
-
-
+// });
 
 
 
@@ -374,25 +953,38 @@ import cloudinary from "../config/cloudinary.js";
 
 /*
 |--------------------------------------------------------------------------
+| STOCK AND FULFILMENT OPTIONS
+|--------------------------------------------------------------------------
+*/
+
+const STOCK_AVAILABILITY_OPTIONS = [
+  "available",
+  "out_of_stock",
+];
+
+const FULFILMENT_TYPE_OPTIONS = [
+  "ready_stock",
+  "made_to_order",
+];
+
+/*
+|--------------------------------------------------------------------------
 | Upload Image To Cloudinary
 |--------------------------------------------------------------------------
 */
 
 const uploadImage = async (file) => {
-
-  const result =
-    await cloudinary.uploader.upload(
-      `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
-      {
-        folder: "paint-market/products",
-      }
-    );
+  const result = await cloudinary.uploader.upload(
+    `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+    {
+      folder: "paint-market/products",
+    }
+  );
 
   return {
     url: result.secure_url,
     publicId: result.public_id,
   };
-
 };
 
 /*
@@ -415,7 +1007,39 @@ export const createProduct = asyncHandler(async (req, res) => {
 
   /*
   |--------------------------------------------------------------------------
-  | Validate bucket image
+  | Validate Stock Availability
+  |--------------------------------------------------------------------------
+  */
+
+  const stockAvailability =
+    req.body.stockAvailability || "available";
+
+  if (!STOCK_AVAILABILITY_OPTIONS.includes(stockAvailability)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid stock availability.",
+    });
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Validate Fulfilment Type
+  |--------------------------------------------------------------------------
+  */
+
+  const fulfilmentType =
+    req.body.fulfilmentType || "ready_stock";
+
+  if (!FULFILMENT_TYPE_OPTIONS.includes(fulfilmentType)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid fulfilment type.",
+    });
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Validate Bucket Image
   |--------------------------------------------------------------------------
   */
 
@@ -432,7 +1056,7 @@ export const createProduct = asyncHandler(async (req, res) => {
 
   /*
   |--------------------------------------------------------------------------
-  | Upload bucket image
+  | Upload Bucket Image
   |--------------------------------------------------------------------------
   */
 
@@ -442,7 +1066,7 @@ export const createProduct = asyncHandler(async (req, res) => {
 
   /*
   |--------------------------------------------------------------------------
-  | Parse questions
+  | Parse Questions
   |--------------------------------------------------------------------------
   */
 
@@ -461,7 +1085,7 @@ export const createProduct = asyncHandler(async (req, res) => {
 
   /*
   |--------------------------------------------------------------------------
-  | Parse product features
+  | Parse Product Features
   |--------------------------------------------------------------------------
   */
 
@@ -480,7 +1104,7 @@ export const createProduct = asyncHandler(async (req, res) => {
 
   /*
   |--------------------------------------------------------------------------
-  | Parse variants
+  | Parse Variants
   |--------------------------------------------------------------------------
   */
 
@@ -499,7 +1123,7 @@ export const createProduct = asyncHandler(async (req, res) => {
 
   /*
   |--------------------------------------------------------------------------
-  | Upload variant images
+  | Upload Variant Images
   |--------------------------------------------------------------------------
   |
   | Variant image field names from frontend:
@@ -520,6 +1144,7 @@ export const createProduct = asyncHandler(async (req, res) => {
     /*
      * Existing variant
      */
+
     if (variant._id) {
       variantImageFile = req.files?.find(
         (file) => file.fieldname === `variantImage_${variant._id}`
@@ -529,6 +1154,7 @@ export const createProduct = asyncHandler(async (req, res) => {
     /*
      * New variant
      */
+
     if (!variant._id) {
       variantImageFile = req.files?.find(
         (file) => file.fieldname === `variantImage_new_${i}`
@@ -540,6 +1166,7 @@ export const createProduct = asyncHandler(async (req, res) => {
     /*
      * Variant image is optional
      */
+
     if (variantImageFile) {
       const uploadedImage = await uploadImage(variantImageFile);
 
@@ -550,10 +1177,10 @@ export const createProduct = asyncHandler(async (req, res) => {
     }
 
     /*
-     * The schema currently requires an image object.
-     * Therefore, if no image was uploaded, do not create
-     * the variant with a missing image.
+     * The schema requires an image object.
+     * Do not create a variant with a missing image.
      */
+
     if (!image) {
       return res.status(400).json({
         success: false,
@@ -570,7 +1197,7 @@ export const createProduct = asyncHandler(async (req, res) => {
 
   /*
   |--------------------------------------------------------------------------
-  | Create product
+  | Create Product
   |--------------------------------------------------------------------------
   */
 
@@ -585,6 +1212,8 @@ export const createProduct = asyncHandler(async (req, res) => {
       coverageInformation: req.body.coverageInformation,
       productFeatures,
       questions,
+      stockAvailability,
+      fulfilmentType,
       status: req.body.status,
       productImages: bucketImages,
       variants: uploadedVariants,
@@ -600,6 +1229,8 @@ export const createProduct = asyncHandler(async (req, res) => {
     coverageInformation: req.body.coverageInformation,
     productFeatures,
     questions,
+    stockAvailability,
+    fulfilmentType,
     status: req.body.status,
     productImages: bucketImages,
     variants: uploadedVariants,
@@ -612,32 +1243,22 @@ export const createProduct = asyncHandler(async (req, res) => {
   });
 });
 
-
 /*
 |--------------------------------------------------------------------------
 | GET ALL PRODUCTS
 |--------------------------------------------------------------------------
 */
 
-export const getProducts =
-asyncHandler(async (req, res) => {
-
-  const products =
-    await Product.find()
-    .sort({
-      createdAt: -1,
-    });
-
-  res.status(200).json({
-
-    success: true,
-
-    count: products.length,
-
-    products,
-
+export const getProducts = asyncHandler(async (req, res) => {
+  const products = await Product.find().sort({
+    createdAt: -1,
   });
 
+  res.status(200).json({
+    success: true,
+    count: products.length,
+    products,
+  });
 });
 
 /*
@@ -646,35 +1267,20 @@ asyncHandler(async (req, res) => {
 |--------------------------------------------------------------------------
 */
 
-export const getProduct =
-asyncHandler(async (req, res) => {
-
-  const product =
-    await Product.findById(
-      req.params.id
-    );
+export const getProduct = asyncHandler(async (req, res) => {
+  const product = await Product.findById(req.params.id);
 
   if (!product) {
-
     return res.status(404).json({
-
       success: false,
-
-      message:
-        "Product not found",
-
+      message: "Product not found",
     });
-
   }
 
   res.status(200).json({
-
     success: true,
-
     product,
-
   });
-
 });
 
 /*
@@ -682,336 +1288,291 @@ asyncHandler(async (req, res) => {
 | UPDATE PRODUCT
 |--------------------------------------------------------------------------
 */
-export const updateProduct =
-asyncHandler(async (req, res) => {
 
-    const product =
-    await Product.findById(req.params.id);
+export const updateProduct = asyncHandler(async (req, res) => {
+  const product = await Product.findById(req.params.id);
 
-    if (!product) {
+  if (!product) {
+    return res.status(404).json({
+      success: false,
+      message: "Product not found",
+    });
+  }
 
-        return res.status(404).json({
+  /*
+  |--------------------------------------------------------------------------
+  | Parse Questions
+  |--------------------------------------------------------------------------
+  */
 
-            success: false,
+  let questions = product.questions;
 
-            message: "Product not found",
-
-        });
-
+  if (req.body.questions) {
+    try {
+      questions = JSON.parse(req.body.questions);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid questions JSON.",
+      });
     }
+  }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Parse Questions
-    |--------------------------------------------------------------------------
-    */
+  /*
+  |--------------------------------------------------------------------------
+  | Parse Product Features
+  |--------------------------------------------------------------------------
+  */
 
-    let questions = product.questions;
+  let productFeatures = product.productFeatures;
 
-    if (req.body.questions) {
-
-        questions = JSON.parse(req.body.questions);
-
+  if (req.body.productFeatures) {
+    try {
+      productFeatures = JSON.parse(req.body.productFeatures);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid productFeatures JSON.",
+      });
     }
+  }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Parse Product Features
-    |--------------------------------------------------------------------------
-    */
+  /*
+  |--------------------------------------------------------------------------
+  | Parse Variants
+  |--------------------------------------------------------------------------
+  */
 
-    let productFeatures = product.productFeatures;
+  let variants = product.variants;
 
-    if (req.body.productFeatures) {
-
-        productFeatures = JSON.parse(req.body.productFeatures);
-
+  if (req.body.variants) {
+    try {
+      variants = JSON.parse(req.body.variants);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid variants JSON.",
+      });
     }
+  }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Parse Variants
-    |--------------------------------------------------------------------------
-    */
+  /*
+  |--------------------------------------------------------------------------
+  | Validate Stock Availability
+  |--------------------------------------------------------------------------
+  */
 
-    let variants = product.variants;
-
-    if (req.body.variants) {
-
-        variants = JSON.parse(req.body.variants);
-
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Separate Uploaded Files
-    |--------------------------------------------------------------------------
-    */
-
-    const files = req.files || [];
-
-    let bucketImageFile = null;
-
-    const variantFiles = {};
-
-    for (const file of files) {
-
-        if (file.fieldname === "productImages") {
-
-            bucketImageFile = file;
-
-        }
-
-        else if (
-
-            file.fieldname.startsWith(
-
-                "variantImage_"
-
-            )
-
-        ) {
-
-            const key = file.fieldname.replace(
-
-                "variantImage_",
-
-                ""
-
-            );
-
-            variantFiles[key] = file;
-
-        }
-
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Bucket Image
-    |--------------------------------------------------------------------------
-    */
-
-    let bucketImages = product.productImages;
-
-    if (bucketImageFile) {
-
-        const uploadedBucket =
-
-        await uploadImage(bucketImageFile);
-
-        bucketImages = [
-
-            uploadedBucket.url,
-
-        ];
-
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Variants
-    |--------------------------------------------------------------------------
-    */
-
-    const uploadedVariants = [];
-
-    for (
-
-        let index = 0;
-
-        index < variants.length;
-
-        index++
-
+  if (req.body.stockAvailability !== undefined) {
+    if (
+      !STOCK_AVAILABILITY_OPTIONS.includes(
+        req.body.stockAvailability
+      )
     ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid stock availability.",
+      });
+    }
+  }
 
-        const variant = variants[index];
+  /*
+  |--------------------------------------------------------------------------
+  | Validate Fulfilment Type
+  |--------------------------------------------------------------------------
+  */
 
-        let image = null;
+  if (req.body.fulfilmentType !== undefined) {
+    if (
+      !FULFILMENT_TYPE_OPTIONS.includes(
+        req.body.fulfilmentType
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid fulfilment type.",
+      });
+    }
+  }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Existing Variant
-        |--------------------------------------------------------------------------
-        */
+  /*
+  |--------------------------------------------------------------------------
+  | Separate Uploaded Files
+  |--------------------------------------------------------------------------
+  */
 
-        if (variant._id) {
+  const files = req.files || [];
 
-            const existing =
+  let bucketImageFile = null;
 
-            product.variants.id(
+  const variantFiles = {};
 
-                variant._id
+  for (const file of files) {
+    if (file.fieldname === "productImages") {
+      bucketImageFile = file;
+    } else if (file.fieldname.startsWith("variantImage_")) {
+      const key = file.fieldname.replace(
+        "variantImage_",
+        ""
+      );
 
-            );
+      variantFiles[key] = file;
+    }
+  }
 
-            if (existing) {
+  /*
+  |--------------------------------------------------------------------------
+  | Bucket Image
+  |--------------------------------------------------------------------------
+  */
 
-                image = existing.image;
+  let bucketImages = product.productImages;
 
-            }
+  if (bucketImageFile) {
+    const uploadedBucket = await uploadImage(bucketImageFile);
 
-        }
+    bucketImages = [
+      uploadedBucket.url,
+    ];
+  }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Existing Variant Image Updated
-        |--------------------------------------------------------------------------
-        */
+  /*
+  |--------------------------------------------------------------------------
+  | Variants
+  |--------------------------------------------------------------------------
+  */
 
-        if (
+  const uploadedVariants = [];
 
-            variant._id &&
+  for (
+    let index = 0;
+    index < variants.length;
+    index++
+  ) {
+    const variant = variants[index];
 
-            variantFiles[variant._id]
+    let image = null;
 
-        ) {
+    /*
+    |--------------------------------------------------------------------------
+    | Existing Variant
+    |--------------------------------------------------------------------------
+    */
 
-            const uploaded =
+    if (variant._id) {
+      const existing = product.variants.id(
+        variant._id
+      );
 
-            await uploadImage(
-
-                variantFiles[variant._id]
-
-            );
-
-            image = {
-
-                url: uploaded.url,
-
-                publicId:
-
-                uploaded.publicId,
-
-            };
-
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | New Variant
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-
-            !variant._id &&
-
-            variantFiles[`new_${index}`]
-
-        ) {
-
-            const uploaded =
-
-            await uploadImage(
-
-                variantFiles[`new_${index}`]
-
-            );
-
-            image = {
-
-                url: uploaded.url,
-
-                publicId:
-
-                uploaded.publicId,
-
-            };
-
-        }
-
-        uploadedVariants.push({
-
-            colourName:
-
-            variant.colourName,
-
-            colourCode:
-
-            variant.colourCode,
-
-            image,
-
-        });
-
+      if (existing) {
+        image = existing.image;
+      }
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Update Product
+    | Existing Variant Image Updated
     |--------------------------------------------------------------------------
     */
 
-    product.productName =
+    if (
+      variant._id &&
+      variantFiles[variant._id]
+    ) {
+      const uploaded = await uploadImage(
+        variantFiles[variant._id]
+      );
 
+      image = {
+        url: uploaded.url,
+        publicId: uploaded.publicId,
+      };
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | New Variant
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      !variant._id &&
+      variantFiles[`new_${index}`]
+    ) {
+      const uploaded = await uploadImage(
+        variantFiles[`new_${index}`]
+      );
+
+      image = {
+        url: uploaded.url,
+        publicId: uploaded.publicId,
+      };
+    }
+
+    uploadedVariants.push({
+      colourName: variant.colourName,
+      colourCode: variant.colourCode,
+      image,
+    });
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Update Product
+  |--------------------------------------------------------------------------
+  */
+
+  product.productName =
     req.body.productName ??
-
     product.productName;
 
-    product.productCategory =
-
+  product.productCategory =
     req.body.productCategory ??
-
     product.productCategory;
 
-    product.productDescription =
-
+  product.productDescription =
     req.body.productDescription ??
-
     product.productDescription;
 
-    product.price =
-
+  product.price =
     req.body.price ??
-
     product.price;
 
-    product.coverageInformation =
-
+  product.coverageInformation =
     req.body.coverageInformation ??
-
     product.coverageInformation;
 
-    product.status =
-
+  product.status =
     req.body.status ??
-
     product.status;
 
-    product.productImages =
+  product.stockAvailability =
+    req.body.stockAvailability ??
+    product.stockAvailability;
 
+  product.fulfilmentType =
+    req.body.fulfilmentType ??
+    product.fulfilmentType;
+
+  product.productImages =
     bucketImages;
 
-    product.productFeatures =
-
+  product.productFeatures =
     productFeatures;
 
-    product.questions =
-
+  product.questions =
     questions;
 
-    product.variants =
-
+  product.variants =
     uploadedVariants;
 
-    await product.save();
+  await product.save();
 
-    res.status(200).json({
-
-        success: true,
-
-        message:
-
-        "Product updated successfully.",
-
-        product,
-
-    });
-
+  res.status(200).json({
+    success: true,
+    message: "Product updated successfully.",
+    product,
+  });
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -1019,140 +1580,80 @@ asyncHandler(async (req, res) => {
 |--------------------------------------------------------------------------
 */
 
-export const deleteProduct =
-asyncHandler(async (req, res) => {
-
-  const product =
-    await Product.findById(
-      req.params.id
-    );
+export const deleteProduct = asyncHandler(async (req, res) => {
+  const product = await Product.findById(
+    req.params.id
+  );
 
   if (!product) {
-
     return res.status(404).json({
-
       success: false,
-
-      message:
-        "Product not found",
-
+      message: "Product not found",
     });
-
   }
 
   await product.deleteOne();
 
   res.status(200).json({
-
     success: true,
+    message: "Product deleted successfully",
+  });
+});
 
-    message:
-      "Product deleted successfully",
+/*
+|--------------------------------------------------------------------------
+| ADD PRODUCT VARIANT
+|--------------------------------------------------------------------------
+*/
 
+export const addProductVariant = asyncHandler(async (req, res) => {
+  const product = await Product.findById(req.params.id);
+
+  if (!product) {
+    return res.status(404).json({
+      success: false,
+      message: "Product not found",
+    });
+  }
+
+  if (!req.file) {
+    return res.status(400).json({
+      success: false,
+      message: "Variant image is required.",
+    });
+  }
+
+  const uploaded = await uploadImage(req.file);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Ensure Variants Array Exists
+  |--------------------------------------------------------------------------
+  */
+
+  if (!Array.isArray(product.variants)) {
+    product.variants = [];
+  }
+
+  product.variants.push({
+    colourName: req.body.colourName,
+    colourCode: req.body.colourCode,
+    image: {
+      url: uploaded.url,
+      publicId: uploaded.publicId,
+    },
   });
 
+  product.markModified("variants");
+
+  await product.save();
+
+  res.status(201).json({
+    success: true,
+    message: "Variant added successfully.",
+    product,
+  });
 });
-
-
-
-
-
-
-// VARIANT
-
-/*
-|--------------------------------------------------------------------------
-| ADD PRODUCT VARIANT
-|--------------------------------------------------------------------------
-*/
-
-/*
-|--------------------------------------------------------------------------
-| ADD PRODUCT VARIANT
-|--------------------------------------------------------------------------
-*/
-
-export const addProductVariant =
-asyncHandler(async (req, res) => {
-
-    const product =
-    await Product.findById(req.params.id);
-
-    if (!product) {
-
-        return res.status(404).json({
-            success: false,
-            message: "Product not found",
-        });
-
-    }
-
-    if (!req.file) {
-
-        return res.status(400).json({
-            success: false,
-            message: "Variant image is required.",
-        });
-
-    }
-
-    const uploaded =
-    await uploadImage(req.file);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Ensure variants array exists
-    |--------------------------------------------------------------------------
-    */
-
-    if (!Array.isArray(product.variants)) {
-
-        product.variants = [];
-
-    }
-
-    product.variants.push({
-
-        colourName:
-            req.body.colourName,
-
-        colourCode:
-            req.body.colourCode,
-
-        image: {
-
-            url:
-                uploaded.url,
-
-            publicId:
-                uploaded.publicId,
-
-        },
-
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Tell Mongoose the array changed
-    |--------------------------------------------------------------------------
-    */
-
-    product.markModified("variants");
-
-    await product.save();
-
-    res.status(201).json({
-
-        success: true,
-
-        message: "Variant added successfully.",
-
-        product,
-
-    });
-
-});
-
 
 /*
 |--------------------------------------------------------------------------
@@ -1160,92 +1661,64 @@ asyncHandler(async (req, res) => {
 |--------------------------------------------------------------------------
 */
 
-export const updateProductVariant =
-asyncHandler(async(req,res)=>{
+export const updateProductVariant = asyncHandler(async (req, res) => {
+  const product = await Product.findById(
+    req.params.id
+  );
 
-    const product=
-    await Product.findById(
-        req.params.id
-    );
+  if (!product) {
+    return res.status(404).json({
+      success: false,
+      message: "Product not found.",
+    });
+  }
 
-    if(!product){
+  const variant = product.variants.id(
+    req.params.variantId
+  );
 
-        return res.status(404).json({
+  if (!variant) {
+    return res.status(404).json({
+      success: false,
+      message: "Variant not found.",
+    });
+  }
 
-            success:false,
-
-            message:"Product not found.",
-
-        });
-
-    }
-
-    const variant=
-    product.variants.id(
-        req.params.variantId
-    );
-
-    if(!variant){
-
-        return res.status(404).json({
-
-            success:false,
-
-            message:"Variant not found.",
-
-        });
-
-    }
-
-    variant.colourName=
+  variant.colourName =
     req.body.colourName ??
     variant.colourName;
 
-    variant.colourCode=
+  variant.colourCode =
     req.body.colourCode ??
     variant.colourCode;
 
-    /*
-    |--------------------------------------------------------------------------
-    | Replace Image
-    |--------------------------------------------------------------------------
-    */
+  /*
+  |--------------------------------------------------------------------------
+  | Replace Image
+  |--------------------------------------------------------------------------
+  */
 
-    if(req.file){
+  if (req.file) {
+    await cloudinary.uploader.destroy(
+      variant.image.publicId
+    );
 
-        await cloudinary.uploader.destroy(
-            variant.image.publicId
-        );
+    const uploaded = await uploadImage(req.file);
 
-        const uploaded=
-        await uploadImage(req.file);
+    variant.image = {
+      url: uploaded.url,
+      publicId: uploaded.publicId,
+    };
+  }
 
-        variant.image={
+  await product.save();
 
-            url:uploaded.url,
-
-            publicId:
-            uploaded.publicId,
-
-        };
-
-    }
-
-    await product.save();
-
-    res.status(200).json({
-
-        success:true,
-
-        message:
-        "Variant updated successfully.",
-
-        product,
-
-    });
-
+  res.status(200).json({
+    success: true,
+    message: "Variant updated successfully.",
+    product,
+  });
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -1253,62 +1726,42 @@ asyncHandler(async(req,res)=>{
 |--------------------------------------------------------------------------
 */
 
-export const deleteProductVariant =
-asyncHandler(async(req,res)=>{
+export const deleteProductVariant = asyncHandler(async (req, res) => {
+  const product = await Product.findById(
+    req.params.id
+  );
 
-    const product=
-    await Product.findById(
-        req.params.id
-    );
-
-    if(!product){
-
-        return res.status(404).json({
-
-            success:false,
-
-            message:"Product not found.",
-
-        });
-
-    }
-
-    const variant=
-    product.variants.id(
-        req.params.variantId
-    );
-
-    if(!variant){
-
-        return res.status(404).json({
-
-            success:false,
-
-            message:"Variant not found.",
-
-        });
-
-    }
-
-    await cloudinary.uploader.destroy(
-        variant.image.publicId
-    );
-
-    product.variants.pull(
-        req.params.variantId
-    );
-
-    await product.save();
-
-    res.status(200).json({
-
-        success:true,
-
-        message:
-        "Variant deleted successfully.",
-
-        product,
-
+  if (!product) {
+    return res.status(404).json({
+      success: false,
+      message: "Product not found.",
     });
+  }
 
+  const variant = product.variants.id(
+    req.params.variantId
+  );
+
+  if (!variant) {
+    return res.status(404).json({
+      success: false,
+      message: "Variant not found.",
+    });
+  }
+
+  await cloudinary.uploader.destroy(
+    variant.image.publicId
+  );
+
+  product.variants.pull(
+    req.params.variantId
+  );
+
+  await product.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Variant deleted successfully.",
+    product,
+  });
 });

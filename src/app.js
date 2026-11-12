@@ -35,6 +35,7 @@ import frontendPaymentRoutes from "./routes/frontendPayment.routes.js";
 // import paintingEstimatorRoutes from "./routes/paintingEstimator.routes.js";
 import paintingEstimatorRoutes from "./routes/paintingEstimator.routes.js";
 import inspectionBookingRoutes from "./routes/inspectionBooking.routes.js";
+import qrCodeRoutes from "./routes/qrCode.routes.js";
 
 /*
 |--------------------------------------------------------------------------
@@ -296,6 +297,8 @@ app.use(
   "/api",
   frontendPaymentRoutes
 );
+
+app.use("/api/qr-codes", qrCodeRoutes);
 
 /*
 |--------------------------------------------------------------------------

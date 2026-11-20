@@ -3,6 +3,9 @@ import express from "express";
 import protect from "../middleware/auth.middleware.js";
 import authorize from "../middleware/role.middleware.js";
 import mediaUpload from "../middleware/mediaUpload.middleware.js";
+import {
+  createCompressedVideoCopy,
+} from "../controllers/media.migration.controller.js";
 
 import {
     createMedia,
@@ -53,10 +56,16 @@ router.put(
 );
 
 router.delete(
-    "/:id",
-    protect,
-    authorize("admin"),
-    deleteMedia
+  "/:id",
+  protect,
+  authorize("admin"),
+  deleteMedia
 );
 
+router.post(
+  "/:id/compression-copy",
+  protect,
+  authorize("admin"),
+  createCompressedVideoCopy
+);
 export default router;

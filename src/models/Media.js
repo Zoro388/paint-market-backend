@@ -1,12 +1,9 @@
+
 import mongoose from "mongoose";
 
 const mediaSchema = new mongoose.Schema(
   {
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-    },
+    title: { type: String, required: true, trim: true },
 
     category: {
       type: String,
@@ -15,11 +12,7 @@ const mediaSchema = new mongoose.Schema(
       default: "General Training",
     },
 
-    description: {
-      type: String,
-      required: true,
-      trim: true,
-    },
+    description: { type: String, required: true, trim: true },
 
     images: {
       type: [String],
@@ -30,14 +23,16 @@ const mediaSchema = new mongoose.Schema(
       },
     },
 
-    video: {
-      type: String,
-      default: "",
-    },
+    video: { type: String, default: "" },
+
+    // Cloudinary public ID of the currently active video.
+    videoPublicId: { type: String, default: "" },
+
+    // Original video retained temporarily during migration.
+    videoBackupUrl: { type: String, default: "" },
+    videoBackupPublicId: { type: String, default: "" },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 export default mongoose.model("Media", mediaSchema);

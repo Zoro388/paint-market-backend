@@ -110,3 +110,104 @@ export const createCompressedVideoCopy = async (req, res) => {
     });
   }
 };
+
+
+
+export const applyCompressedVideoCopy = async (req, res) => {
+  try {
+    const { compressedPublicId } = req.body;
+
+    if (
+      typeof compressedPublicId !== "string" ||
+      !compressedPublicId.startsWith(
+        "paint-market/gallery/videos/optimized/migration-test-"
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid migration video public ID",
+      });
+    }
+
+    const media = await Media.findById(req.params.id);
+
+    if (!media) {
+      return res.status(404).json({
+        success: false,
+        message: "Lesson not found",
+      });
+    }
+
+    if (!media.video) {
+      return res.status(400).json({
+        success: false,
+        message: "This lesson has no original video",
+      });
+    }
+
+    if (media.videoBackupUrl) {
+      return res.status(409).json({
+        success: false,
+        message: "This lesson already has a migration backup",
+      });
+    }
+
+    // Confirm that the compressed Cloudinary asset actually exists.
+    const compressedAsset = await cloudinary.api.resource(
+      compressedPublicId,
+      { resource_type: "video" }
+    );
+
+    if (
+      !compressedAsset.secure_url ||
+      compressedAsset.format !== "mp4"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "The compressed MP4 asset could not be verified",
+      });
+    }
+
+    // Preserve the original before changing the active video.
+    const originalPublicId = getPublicIdFromUrl(media.video);
+
+    media.videoBackupUrl = media.video;
+    media.videoBackupPublicId = originalPublicId;
+
+    // Switch the lesson to the verified compressed copy.
+    media.video = compressedAsset.secure_url;
+    media.videoPublicId = compressedAsset.public_id;
+
+    await media.save();
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Lesson now uses the compressed video. Original video preserved as backup.",
+      lesson: {
+        id: media._id,
+        title: media.title,
+      },
+      activeVideo: {
+        url: media.video,
+        publicId: media.videoPublicId,
+        sizeMB: Number(
+          (compressedAsset.bytes / (1024 * 1024)).toFixed(2)
+        ),
+      },
+      backup: {
+        originalUrlPreserved: Boolean(media.videoBackupUrl),
+        originalPublicId: media.videoBackupPublicId,
+      },
+      originalDeleted: false,
+    });
+  } catch (error) {
+    console.error("Apply compressed video error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Could not apply the compressed video",
+      error: error.message,
+    });
+  }
+};

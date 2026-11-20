@@ -5,6 +5,7 @@ import authorize from "../middleware/role.middleware.js";
 import mediaUpload from "../middleware/mediaUpload.middleware.js";
 import {
   createCompressedVideoCopy,
+  applyCompressedVideoCopy,
 } from "../controllers/media.migration.controller.js";
 
 import {
@@ -14,6 +15,7 @@ import {
     updateMedia,
     deleteMedia,
 } from "../controllers/media.controller.js";
+
 
 const router = express.Router();
 
@@ -68,4 +70,12 @@ router.post(
   authorize("admin"),
   createCompressedVideoCopy
 );
+
+router.post(
+  "/:id/apply-compression-copy",
+  protect,
+  authorize("admin"),
+  applyCompressedVideoCopy
+);
+
 export default router;

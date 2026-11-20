@@ -1,7 +1,14 @@
 
 import Media from "../models/Media.js";
 import cloudinary from "../config/cloudinary.js";
-import { randomUUID, createHash, timingSafeEqual } from "crypto";
+import {
+  randomUUID,
+  createHash,
+  timingSafeEqual,
+} from "node:crypto";
+
+const WEBHOOK_URL =
+  "https://paint-market-backend.onrender.com/api/media/cloudinary-eager-webhook";
 
 const getPublicIdFromUrl = (url) => {
   if (!url || typeof url !== "string") return "";
@@ -26,12 +33,19 @@ const getPublicIdFromUrl = (url) => {
 /**
  * START ASYNCHRONOUS VIDEO COMPRESSION
  *
- * Creates an eager MP4 transformation on Cloudinary.
- * Cloudinary notifies our webhook when processing finishes.
+ * IMPORTANT:
+ * 1. Save migration information in MongoDB first.
+ * 2. Start Cloudinary compression.
+ * 3. Save batch ID if Cloudinary returns one.
+ *
+ * The webhook can now find the MongoDB record even if
+ * Cloudinary finishes before the explicit() call returns.
  */
 export const createCompressedVideoCopy = async (req, res) => {
+  let media;
+
   try {
-    const media = await Media.findById(req.params.id);
+    media = await Media.findById(req.params.id);
 
     if (!media) {
       return res.status(404).json({
@@ -51,17 +65,17 @@ export const createCompressedVideoCopy = async (req, res) => {
       return res.status(409).json({
         success: false,
         message: "A video compression job is already processing",
-        batchId: media.videoMigrationBatchId,
+        batchId: media.videoMigrationBatchId || null,
       });
     }
 
-    // Prevent duplicate compression jobs when a copy is already ready.
     if (media.videoMigrationStatus === "ready") {
       return res.status(409).json({
         success: false,
         message:
           "A compressed copy already exists. Apply it before starting another migration.",
-        compressedPublicId: media.videoMigrationCompressedPublicId,
+        compressedPublicId:
+          media.videoMigrationCompressedPublicId,
       });
     }
 
@@ -79,54 +93,110 @@ export const createCompressedVideoCopy = async (req, res) => {
     if (!originalPublicId) {
       return res.status(400).json({
         success: false,
-        message: "Could not determine the original Cloudinary public ID",
+        message:
+          "Could not determine the original Cloudinary public ID",
       });
     }
 
     const migrationToken = randomUUID();
 
-    const result = await cloudinary.uploader.explicit(originalPublicId, {
-      type: "upload",
-      resource_type: "video",
-      eager: [
-        {
-          width: 1280,
-          height: 720,
-          crop: "limit",
-          quality: "auto:eco",
-          format: "mp4",
-        },
-      ],
-      eager_async: true,
-      eager_notification_url:
-        "https://paint-market-backend.onrender.com/api/media/cloudinary-eager-webhook",
-    });
-
-    if (!result.batch_id) {
-      return res.status(500).json({
-        success: false,
-        message: "Cloudinary did not return a compression batch ID",
-      });
-    }
-
+    // STEP 1: SAVE THE MIGRATION RECORD BEFORE CALLING CLOUDINARY.
     media.videoMigrationStatus = "processing";
     media.videoMigrationToken = migrationToken;
     media.videoMigrationSourcePublicId = originalPublicId;
-    media.videoMigrationBatchId = result.batch_id;
+    media.videoMigrationBatchId = "";
     media.videoMigrationCompressedUrl = "";
     media.videoMigrationCompressedPublicId = "";
     media.videoMigrationError = "";
 
     await media.save();
 
+    console.log("VIDEO MIGRATION RECORD SAVED:", {
+      mediaId: media._id,
+      sourcePublicId: originalPublicId,
+      migrationToken,
+    });
+
+    // STEP 2: START CLOUDINARY ASYNCHRONOUS COMPRESSION.
+    const result = await cloudinary.uploader.explicit(
+      originalPublicId,
+      {
+        type: "upload",
+        resource_type: "video",
+        eager: [
+          {
+            width: 1280,
+            height: 720,
+            crop: "limit",
+            quality: "auto:eco",
+            format: "mp4",
+          },
+        ],
+        eager_async: true,
+        eager_notification_url: WEBHOOK_URL,
+      }
+    );
+
+    const batchId = result?.batch_id || "";
+
+    // STEP 3: SAVE THE BATCH ID IF IT WAS RETURNED.
+    // Re-fetch the record because the webhook may already
+    // have completed the migration.
+    if (batchId) {
+      const latestMedia = await Media.findById(media._id);
+
+      if (
+        latestMedia &&
+        latestMedia.videoMigrationStatus === "processing" &&
+        !latestMedia.videoMigrationBatchId
+      ) {
+        latestMedia.videoMigrationBatchId = batchId;
+        await latestMedia.save();
+      }
+    }
+
+    // Do not fail simply because explicit() did not return
+    // a batch ID. Cloudinary can still notify our webhook.
+    const latestMedia = await Media.findById(media._id);
+
+    console.log("CLOUDINARY COMPRESSION REQUEST SUBMITTED:", {
+      mediaId: media._id,
+      batchId: batchId || null,
+      currentStatus: latestMedia?.videoMigrationStatus,
+    });
+
     return res.status(202).json({
       success: true,
-      message: "Video compression has started",
-      batchId: result.batch_id,
-      status: media.videoMigrationStatus,
+      message: batchId
+        ? "Video compression has started"
+        : "Compression request submitted. Waiting for Cloudinary notification.",
+      batchId: batchId || latestMedia?.videoMigrationBatchId || null,
+      status: latestMedia?.videoMigrationStatus || "processing",
     });
   } catch (error) {
     console.error("CREATE COMPRESSED VIDEO COPY ERROR:", error);
+
+    // If the webhook already completed the job, do not
+    // overwrite its successful result.
+    if (media?._id) {
+      try {
+        const latestMedia = await Media.findById(media._id);
+
+        if (
+          latestMedia &&
+          latestMedia.videoMigrationStatus === "processing"
+        ) {
+          latestMedia.videoMigrationStatus = "failed";
+          latestMedia.videoMigrationError = error.message;
+          await latestMedia.save();
+        }
+      } catch (saveError) {
+        console.error(
+          "FAILED TO UPDATE MIGRATION ERROR STATUS:",
+          saveError
+        );
+      }
+    }
 
     return res.status(500).json({
       success: false,
@@ -173,18 +243,6 @@ export const applyCompressedVideoCopy = async (req, res) => {
       });
     }
 
-    // Confirm that the requested compressed asset is the one recorded
-    // by the completed migration.
-    if (
-      compressedPublicId !==
-      media.videoMigrationCompressedPublicId
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Compressed video public ID does not match",
-      });
-    }
-
     const compressedAsset = await cloudinary.api.resource(
       compressedPublicId,
       {
@@ -193,7 +251,7 @@ export const applyCompressedVideoCopy = async (req, res) => {
       }
     );
 
-    if (!compressedAsset || !compressedAsset.secure_url) {
+    if (!compressedAsset?.secure_url) {
       return res.status(404).json({
         success: false,
         message: "Compressed video asset could not be verified",
@@ -244,9 +302,6 @@ export const applyCompressedVideoCopy = async (req, res) => {
 
 /**
  * VERIFY CLOUDINARY WEBHOOK SIGNATURE
- *
- * Cloudinary signs notifications using:
- * SHA1 or SHA256 of raw request body + timestamp + API secret.
  */
 const verifyCloudinaryWebhook = (req) => {
   try {
@@ -287,7 +342,6 @@ const verifyCloudinaryWebhook = (req) => {
       .digest("hex");
 
     const suppliedSignature = Buffer.from(signature, "hex");
-
     const validSha1 = Buffer.from(sha1, "hex");
     const validSha256 = Buffer.from(sha256, "hex");
 
@@ -313,8 +367,11 @@ const verifyCloudinaryWebhook = (req) => {
 /**
  * CLOUDINARY EAGER TRANSFORMATION WEBHOOK
  *
- * Cloudinary calls this endpoint when asynchronous compression
- * succeeds or fails.
+ * The webhook locates a migration using the source public ID.
+ * The batch ID is checked when it has already been saved.
+ *
+ * This handles the timing issue where Cloudinary sends its
+ * notification before the explicit() response is saved.
  */
 export const cloudinaryEagerWebhook = async (req, res) => {
   try {
@@ -351,42 +408,56 @@ export const cloudinaryEagerWebhook = async (req, res) => {
     if (!batchId || !sourcePublicId) {
       return res.status(400).json({
         success: false,
-        message: "Webhook is missing batch ID or source public ID",
+        message:
+          "Webhook is missing batch ID or source public ID",
       });
     }
 
+    // Find the currently processing migration by original
+    // Cloudinary public ID. This works even if batch ID has
+    // not yet been saved by the original request.
     const media = await Media.findOne({
-      videoMigrationBatchId: batchId,
       videoMigrationSourcePublicId: sourcePublicId,
+      videoMigrationStatus: "processing",
     });
 
-    // Return 503 so Cloudinary can retry if the database record
-    // has not yet become available.
     if (!media) {
-      console.error("No matching media found for Cloudinary batch:", batchId);
+      console.error("No matching media found for Cloudinary batch:", {
+        batchId,
+        sourcePublicId,
+      });
 
+      // Ask Cloudinary to retry in case the database save
+      // and webhook delivery happened very close together.
       return res.status(503).json({
         success: false,
         message: "Matching migration record not found yet",
       });
     }
 
-    // Ignore duplicate notifications after a completed result.
+    // If a batch ID is already stored, do not accept a
+    // notification belonging to a different batch.
     if (
-      media.videoMigrationStatus === "ready" ||
-      media.videoMigrationStatus === "failed"
+      media.videoMigrationBatchId &&
+      media.videoMigrationBatchId !== batchId
     ) {
+      console.warn("Ignoring unmatched Cloudinary batch:", {
+        mediaId: media._id,
+        savedBatchId: media.videoMigrationBatchId,
+        receivedBatchId: batchId,
+      });
+
       return res.status(200).json({
         success: true,
-        message: "Migration notification already processed",
+        message: "Notification belongs to a different migration batch",
       });
     }
 
-    if (media.videoMigrationStatus !== "processing") {
-      return res.status(200).json({
-        success: true,
-        message: "Migration is no longer processing",
-      });
+    // Record the batch ID immediately when the webhook
+    // arrives before the original request has saved it.
+    if (!media.videoMigrationBatchId) {
+      media.videoMigrationBatchId = batchId;
+      await media.save();
     }
 
     // Handle Cloudinary transformation failure.
@@ -426,9 +497,7 @@ export const cloudinaryEagerWebhook = async (req, res) => {
     }
 
     const eagerResult = eagerResults.find(
-      (item) =>
-        item.format === "mp4" &&
-        item.secure_url
+      (item) => item.format === "mp4" && item.secure_url
     );
 
     if (!eagerResult) {
@@ -444,8 +513,8 @@ export const cloudinaryEagerWebhook = async (req, res) => {
       });
     }
 
-    // Create a separate optimized asset. This leaves the original
-    // asset untouched and available for backup.
+    // Create a separate optimized asset. The original
+    // Cloudinary video remains untouched.
     const safeBatchId = String(batchId).replace(
       /[^a-zA-Z0-9_-]/g,
       ""
@@ -459,9 +528,8 @@ export const cloudinaryEagerWebhook = async (req, res) => {
 
     let uploadedAsset;
 
-    // Check both possible public ID formats before uploading.
-    // This accommodates Cloudinary accounts with different
-    // folder-mode configurations.
+    // Check both possible public ID formats to accommodate
+    // Cloudinary accounts with different folder configurations.
     const possiblePublicIds = [
       `${compressedFolder}/${compressedBaseName}`,
       compressedBaseName,
@@ -480,7 +548,8 @@ export const cloudinaryEagerWebhook = async (req, res) => {
       }
     }
 
-    // Upload only if the optimized asset does not already exist.
+    // Upload the eager result only if the optimized asset
+    // does not already exist.
     if (!uploadedAsset) {
       try {
         uploadedAsset = await cloudinary.uploader.upload(
@@ -490,12 +559,16 @@ export const cloudinaryEagerWebhook = async (req, res) => {
             folder: compressedFolder,
             public_id: compressedBaseName,
             overwrite: false,
-            tags: ["paintdomain", "optimized-video", "migration"],
+            tags: [
+              "paintdomain",
+              "optimized-video",
+              "migration",
+            ],
           }
         );
       } catch (uploadError) {
-        // A duplicate notification or retry may encounter an asset
-        // that was uploaded by an earlier webhook attempt.
+        // A duplicate webhook may encounter an asset already
+        // created by an earlier attempt.
         try {
           uploadedAsset = await cloudinary.api.resource(
             `${compressedFolder}/${compressedBaseName}`,
@@ -510,7 +583,6 @@ export const cloudinaryEagerWebhook = async (req, res) => {
             uploadError
           );
 
-          // Returning 503 allows Cloudinary to retry the notification.
           return res.status(503).json({
             success: false,
             message: "Could not save the optimized video asset",
@@ -519,7 +591,7 @@ export const cloudinaryEagerWebhook = async (req, res) => {
       }
     }
 
-    if (!uploadedAsset || !uploadedAsset.secure_url) {
+    if (!uploadedAsset?.secure_url) {
       return res.status(503).json({
         success: false,
         message: "Optimized video asset could not be verified",
@@ -539,11 +611,11 @@ export const cloudinaryEagerWebhook = async (req, res) => {
       });
     }
 
-    // Store the completed copy without changing the active lesson URL.
+    // Save the completed compressed copy.
+    // Do not replace the active lesson URL here.
     media.videoMigrationCompressedUrl = uploadedAsset.secure_url;
     media.videoMigrationCompressedPublicId =
       uploadedAsset.public_id;
-
     media.videoMigrationStatus = "ready";
     media.videoMigrationError = "";
 

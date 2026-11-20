@@ -1,3 +1,4 @@
+
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -25,6 +26,11 @@ import cartRoutes from "./routes/cart.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import toolRoutes from "./routes/tool.routes.js";
 import mediaRoutes from "./routes/media.routes.js";
+
+import {
+  cloudinaryEagerWebhook,
+} from "./controllers/media.migration.controller.js";
+
 import siteSettingsRoutes from "./routes/siteSettings.routes.js";
 import masterDataRoutes from "./routes/masterData.routes.js";
 import painterRoutes from "./routes/painter.routes.js";
@@ -47,13 +53,31 @@ import qrCodeRoutes from "./routes/qrCode.routes.js";
 //   paystackWebhook,
 // } from "./controllers/payment.controller.js";
 
-
 import notFoundMiddleware from "./middleware/notFound.middleware.js";
 import errorMiddleware from "./middleware/error.middleware.js";
 
-
 const app = express();
 
+/*
+|--------------------------------------------------------------------------
+| CLOUDINARY ASYNC VIDEO WEBHOOK
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+| This MUST come before express.json().
+|
+| Cloudinary signature verification requires
+| the original raw request body.
+|
+*/
+
+app.post(
+  "/api/media/cloudinary-eager-webhook",
+  express.raw({
+    type: "application/json",
+  }),
+  cloudinaryEagerWebhook
+);
 
 /*
 |--------------------------------------------------------------------------
@@ -62,9 +86,7 @@ const app = express();
 |
 | IMPORTANT:
 | This MUST come before express.json()
-|
-| Paystack signature verification requires
-| the original raw request body.
+| when Paystack webhook is enabled.
 |
 */
 
@@ -79,7 +101,6 @@ const app = express();
 //   paystackWebhook
 
 // );
-
 
 /*
 |--------------------------------------------------------------------------
@@ -115,7 +136,6 @@ app.use(
   })
 );
 
-
 /*
 |--------------------------------------------------------------------------
 | SECURITY
@@ -134,7 +154,6 @@ app.use(
   cookieParser()
 );
 
-
 /*
 |--------------------------------------------------------------------------
 | LOGGER
@@ -145,7 +164,6 @@ app.use(
   morgan("dev")
 );
 
-
 /*
 |--------------------------------------------------------------------------
 | HEALTH CHECK
@@ -155,19 +173,12 @@ app.use(
 app.get(
   "/",
   (req, res) => {
-
     res.status(200).json({
-
       success: true,
-
-      message:
-        "Paint Market API Running 🚀",
-
+      message: "Paint Market API Running 🚀",
     });
-
   }
 );
-
 
 /*
 |--------------------------------------------------------------------------
@@ -190,7 +201,10 @@ app.use(
   paintingEstimatorRoutes
 );
 
-app.use("/api/inspection-bookings", inspectionBookingRoutes);
+app.use(
+  "/api/inspection-bookings",
+  inspectionBookingRoutes
+);
 
 app.use(
   "/api/products",
@@ -287,7 +301,6 @@ app.use(
   painterRoutes
 );
 
-
 app.use(
   "/api/checkout",
   checkoutRoutes
@@ -298,7 +311,10 @@ app.use(
   frontendPaymentRoutes
 );
 
-app.use("/api/qr-codes", qrCodeRoutes);
+app.use(
+  "/api/qr-codes",
+  qrCodeRoutes
+);
 
 /*
 |--------------------------------------------------------------------------
@@ -313,6 +329,5 @@ app.use(
 app.use(
   errorMiddleware
 );
-
 
 export default app;

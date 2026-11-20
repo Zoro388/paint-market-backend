@@ -6,6 +6,7 @@ import { sendPainterRequestReceivedEmail } from "../services/painterRequestRecei
 import { sendPainterAcceptedEmail } from "../services/painterAcceptedEmail.service.js";
 import { sendPainterDeclinedEmail } from "../services/painterDeclinedEmail.service.js";
 import PainterProfile from "../models/PainterProfile.js";
+import { notifyAdminsOfPainterBooking } from "../services/adminNotificationSender.service.js";
 
 export const createPainterRequest = asyncHandler(async (req, res) => {
   const { selectedPainter, ...requestData } = req.body;
@@ -85,7 +86,17 @@ try{
     );
 
 }
-
+// Notify admins when a customer books a specific painter
+if (populatedRequest?.selectedPainter) {
+  try {
+    await notifyAdminsOfPainterBooking(populatedRequest);
+  } catch (error) {
+    console.error(
+      "Painter booking admin notification error:",
+      error,
+    );
+  }
+}
   res.status(201).json({
     success: true,
     message: "Painter request submitted successfully",

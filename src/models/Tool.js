@@ -1,3 +1,4 @@
+
 import mongoose from "mongoose";
 
 const toolSchema = new mongoose.Schema(
@@ -13,22 +14,24 @@ const toolSchema = new mongoose.Schema(
       required: true,
     },
 
-images: {
-  type: [String],
-  validate: {
-    validator: (value) =>
-      value.length >= 1 && value.length <= 3,
-    message:
-      "A tool must have between 1 and 3 images",
-  },
-}
+    price: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
+
+    images: {
+      type: [String],
+      validate: {
+        validator: (value) =>
+          value.length >= 1 && value.length <= 3,
+        message: "A tool must have between 1 and 3 images",
+      },
+    },
   },
   {
     timestamps: true,
   }
 );
 
-export default mongoose.model(
-  "Tool",
-  toolSchema
-);
+export default mongoose.model("Tool", toolSchema);

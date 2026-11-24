@@ -1,22 +1,36 @@
+
 import mongoose from "mongoose";
 
 const orderItemSchema = new mongoose.Schema(
   {
+    itemType: {
+      type: String,
+      enum: ["product", "tool"],
+      default: "product",
+    },
+
     product: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",
-      required: true,
+      default: null,
     },
 
+    tool: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Tool",
+      default: null,
+    },
+
+    // Kept for compatibility with existing order displays.
     productName: {
       type: String,
       required: true,
     },
 
     selectedColour: {
-  type: String,
-  default: "Default",
-},
+      type: String,
+      default: "Default",
+    },
 
     quantity: {
       type: Number,
@@ -42,6 +56,7 @@ const orderSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: true,
     },
 
     customerName: {
@@ -60,21 +75,28 @@ const orderSchema = new mongoose.Schema(
     },
 
     deliveryAddress: {
-  type: String,
-  default: "Not provided",
-},
+      type: String,
+      required: true,
+    },
 
     state: {
-  type: String,
-  default: "Not provided",
-},
+      type: String,
+      required: true,
+    },
 
     city: {
-  type: String,
-  default: "Not provided",
-},
+      type: String,
+      required: true,
+    },
 
-    orderedProducts: [orderItemSchema],
+    orderedProducts: {
+      type: [orderItemSchema],
+      required: true,
+      validate: {
+        validator: (items) => items.length > 0,
+        message: "An order must contain at least one item",
+      },
+    },
 
     totalAmount: {
       type: Number,
@@ -82,17 +104,18 @@ const orderSchema = new mongoose.Schema(
     },
 
     paymentMethod: {
-  type: String,
-  enum: ["flutterwave", "bank-transfer"],
-  default: "flutterwave",
-},
+      type: String,
+      enum: ["flutterwave", "bank-transfer"],
+      required: true,
+    },
 
     paymentStatus: {
       type: String,
       enum: ["pending", "paid", "failed"],
       default: "pending",
     },
-    paymentReference:{
+
+    paymentReference: {
       type: String,
       default: "",
     },
@@ -119,9 +142,4 @@ const orderSchema = new mongoose.Schema(
   }
 );
 
-const Order = mongoose.model(
-  "Order",
-  orderSchema
-);
-
-export default Order;
+export default mongoose.model("Order", orderSchema);

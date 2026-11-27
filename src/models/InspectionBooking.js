@@ -103,6 +103,11 @@ const inspectionBookingSchema = new mongoose.Schema(
       default: null,
     },
 
+    nombaTransactionId: {
+  type: String,
+  default: null,
+},
+
     bookingStatus: {
       type: String,
       enum: ["pending_payment", "confirmed", "cancelled"],

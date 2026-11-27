@@ -104,10 +104,10 @@ const orderSchema = new mongoose.Schema(
     },
 
     paymentMethod: {
-      type: String,
-      enum: ["flutterwave", "bank-transfer"],
-      required: true,
-    },
+  type: String,
+  enum: ["flutterwave", "nomba", "bank-transfer"],
+  required: true,
+},
 
     paymentStatus: {
       type: String,

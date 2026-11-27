@@ -42,6 +42,7 @@ import frontendPaymentRoutes from "./routes/frontendPayment.routes.js";
 import paintingEstimatorRoutes from "./routes/paintingEstimator.routes.js";
 import inspectionBookingRoutes from "./routes/inspectionBooking.routes.js";
 import qrCodeRoutes from "./routes/qrCode.routes.js";
+import nombaPaymentRoutes from "./routes/nombaPayment.routes.js";
 
 /*
 |--------------------------------------------------------------------------
@@ -316,6 +317,9 @@ app.use(
   qrCodeRoutes
 );
 
+
+
+app.use("/api/payments/nomba", nombaPaymentRoutes);
 /*
 |--------------------------------------------------------------------------
 | ERROR HANDLING

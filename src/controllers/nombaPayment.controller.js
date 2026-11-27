@@ -76,6 +76,7 @@ export const initializeNombaPayment = async (req, res) => {
         });
       }
 
+      // TOOL ITEMS
       if (item.itemType === "tool" || item.toolId) {
         if (!item.toolId) {
           return res.status(400).json({
@@ -111,6 +112,7 @@ export const initializeNombaPayment = async (req, res) => {
         continue;
       }
 
+      // PAINT PRODUCT ITEMS
       if (!item.productId) {
         return res.status(400).json({
           success: false,
@@ -136,18 +138,20 @@ export const initializeNombaPayment = async (req, res) => {
 
       const selectedColour = item.selectedColour || "Default";
 
+      // Cart stores the selected variant's MongoDB ID.
+      // Validate against that same ID here.
       if (
-  Array.isArray(product.variants) &&
-  product.variants.length > 0 &&
-  !product.variants.some(
-    (variant) => variant._id.toString() === selectedColour
-  )
-) {
-  return res.status(400).json({
-    success: false,
-    message: `The selected colour for ${product.productName} is unavailable.`,
-  });
-}
+        Array.isArray(product.variants) &&
+        product.variants.length > 0 &&
+        !product.variants.some(
+          (variant) => variant._id.toString() === selectedColour
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: `The selected colour for ${product.productName} is unavailable.`,
+        });
+      }
 
       const unitPrice = Number(product.price);
 
@@ -264,15 +268,25 @@ export const initializeNombaPayment = async (req, res) => {
 // ==========================================
 // VERIFY NOMBA SHOP PAYMENT
 // ==========================================
+// This endpoint is public because customers may return from
+// Nomba without an active login token in their browser.
+//
+// The payment is NOT trusted based on the reference alone.
+// We independently verify the transaction with Nomba.
 
 export const verifyNombaPayment = async (req, res) => {
   try {
-    const { reference } = req.body;
+    const reference = String(req.body?.reference || "").trim();
 
-    if (!reference) {
+    if (
+      !reference ||
+      !reference.startsWith("PD-") ||
+      reference.length > 100
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Payment reference is required.",
+        paid: false,
+        message: "A valid payment reference is required.",
       });
     }
 
@@ -284,17 +298,8 @@ export const verifyNombaPayment = async (req, res) => {
     if (!payment) {
       return res.status(404).json({
         success: false,
+        paid: false,
         message: "Payment record not found.",
-      });
-    }
-
-    if (
-      payment.user &&
-      payment.user.toString() !== req.user._id.toString()
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "You are not authorized to verify this payment.",
       });
     }
 
@@ -303,14 +308,8 @@ export const verifyNombaPayment = async (req, res) => {
     if (!order) {
       return res.status(404).json({
         success: false,
+        paid: false,
         message: "Order not found.",
-      });
-    }
-
-    if (order.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: "You are not authorized to access this order.",
       });
     }
 
@@ -325,9 +324,11 @@ export const verifyNombaPayment = async (req, res) => {
         message: "Payment has already been confirmed.",
         orderId: order._id,
         reference,
+        totalAmount: order.totalAmount,
       });
     }
 
+    // Always confirm the transaction directly with Nomba.
     const transaction = await verifyNombaTransaction(reference);
 
     const transactionStatus =
@@ -354,6 +355,7 @@ export const verifyNombaPayment = async (req, res) => {
       });
     }
 
+    // Mark payment successful only after Nomba confirms it.
     payment.status = "success";
     payment.transactionId =
       transaction.paymentReference ||

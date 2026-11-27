@@ -137,17 +137,17 @@ export const initializeNombaPayment = async (req, res) => {
       const selectedColour = item.selectedColour || "Default";
 
       if (
-        Array.isArray(product.variants) &&
-        product.variants.length > 0 &&
-        !product.variants.some(
-          (variant) => variant.colourName === selectedColour
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: `The selected colour for ${product.productName} is unavailable.`,
-        });
-      }
+  Array.isArray(product.variants) &&
+  product.variants.length > 0 &&
+  !product.variants.some(
+    (variant) => variant._id.toString() === selectedColour
+  )
+) {
+  return res.status(400).json({
+    success: false,
+    message: `The selected colour for ${product.productName} is unavailable.`,
+  });
+}
 
       const unitPrice = Number(product.price);
 
